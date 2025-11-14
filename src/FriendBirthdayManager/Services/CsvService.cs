@@ -43,7 +43,8 @@ public class CsvService : ICsvService
                     friend.BirthYear?.ToString() ?? "",
                     friend.BirthMonth?.ToString() ?? "",
                     friend.BirthDay?.ToString() ?? "",
-                    EscapeCsvField(string.Join(",", friend.Aliases.Select(a => a.AliasName))),
+                    // エイリアスは"|"で区切る（カンマとの競合を避けるため）
+                    EscapeCsvField(string.Join("|", friend.Aliases.Select(a => a.AliasName))),
                     EscapeCsvField(friend.Memo ?? ""),
                     friend.NotifyDaysBefore?.ToString() ?? "",
                     friend.NotifyEnabled ? "1" : "0",
@@ -125,10 +126,10 @@ public class CsvService : ICsvService
                         NotifySoundEnabled = fields[8] == "1" ? true : fields[8] == "0" ? false : null
                     };
 
-                    // エイリアスをパース
+                    // エイリアスをパース（"|"区切り）
                     if (!string.IsNullOrWhiteSpace(fields[4]))
                     {
-                        var aliases = fields[4].Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        var aliases = fields[4].Split('|', StringSplitOptions.RemoveEmptyEntries);
                         foreach (var alias in aliases)
                         {
                             friend.Aliases.Add(new Alias { AliasName = alias.Trim() });

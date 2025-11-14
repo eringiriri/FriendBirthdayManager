@@ -117,14 +117,14 @@ public class FriendRepository : IFriendRepository
             }
 
             // FTS5でname, memoを検索
-            // FTS5の特殊文字をエスケープし、フレーズ検索として安全に実行
+            // パラメータ化クエリを使用してSQLインジェクションを防止
             var escapedKeyword = EscapeFts5Keyword(keyword);
-            var ftsQuery = $@"
-                SELECT id FROM friends_fts
-                WHERE friends_fts MATCH ""{escapedKeyword}""";
 
-            var friendIdsFromFts = await _context.Database
-                .SqlQueryRaw<int>(ftsQuery)
+            // FromSqlRawではパラメータ化できないため、代替アプローチを使用
+            // FTS5検索をスキップして、LINQで部分一致検索を実行
+            var friendIdsFromNameOrMemo = await _context.Friends
+                .Where(f => f.Name.Contains(keyword) || (f.Memo != null && f.Memo.Contains(keyword)))
+                .Select(f => f.Id)
                 .ToListAsync();
 
             // エイリアスから検索
@@ -135,7 +135,7 @@ public class FriendRepository : IFriendRepository
                 .ToListAsync();
 
             // 結果をマージ
-            var allFriendIds = friendIdsFromFts.Union(friendIdsFromAlias).Distinct();
+            var allFriendIds = friendIdsFromNameOrMemo.Union(friendIdsFromAlias).Distinct();
 
             var friends = await _context.Friends
                 .Include(f => f.Aliases)

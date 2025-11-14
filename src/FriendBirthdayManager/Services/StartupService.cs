@@ -78,6 +78,21 @@ public class StartupService : IStartupService
                 exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? exePath;
             }
 
+            // セキュリティチェック: exePathのバリデーション
+            if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
+            {
+                _logger.LogError("Invalid executable path: {ExePath}", exePath);
+                return false;
+            }
+
+            // パスに危険な文字が含まれていないかチェック（コマンドインジェクション対策）
+            var invalidChars = new[] { '\"', '&', '|', '<', '>', '^' };
+            if (invalidChars.Any(c => exePath.Contains(c)))
+            {
+                _logger.LogError("Executable path contains invalid characters: {ExePath}", exePath);
+                return false;
+            }
+
             _logger.LogInformation("Executable path: {ExePath}", exePath);
 
             // 既存のタスクを削除（存在する場合）

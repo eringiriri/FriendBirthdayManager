@@ -163,16 +163,7 @@ public class AppDbContext : DbContext
     /// </summary>
     private async Task CreateFts5TableAsync()
     {
-        // 既に存在するかチェック
-        var tableExists = await Database.ExecuteSqlRawAsync(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='friends_fts'");
-
-        if (tableExists > 0)
-        {
-            return; // 既に存在する
-        }
-
-        // FTS5仮想テーブルの作成
+        // FTS5仮想テーブルの作成（IF NOT EXISTSで冪等性を保証）
         await Database.ExecuteSqlRawAsync(@"
             CREATE VIRTUAL TABLE IF NOT EXISTS friends_fts USING fts5(
                 name,
