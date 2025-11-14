@@ -71,6 +71,19 @@ public partial class EditViewModel : ObservableObject
             BirthDay = friend.BirthDay?.ToString();
             Memo = friend.Memo;
             NotifyEnabled = friend.NotifyEnabled;
+            NotifySoundEnabled = friend.NotifySoundEnabled ?? true;
+
+            // NotifyDaysBeforeを NotifyDaysBeforeIndex に変換
+            if (friend.NotifyDaysBefore.HasValue)
+            {
+                var notifyDaysMapping = new[] { 0, 0, 1, 2, 3, 5, 7, 14, 30 };
+                var index = Array.IndexOf(notifyDaysMapping, friend.NotifyDaysBefore.Value);
+                NotifyDaysBeforeIndex = index >= 0 ? index : 0;
+            }
+            else
+            {
+                NotifyDaysBeforeIndex = 0; // デフォルト
+            }
 
             // エイリアスを読み込み
             Aliases.Clear();
@@ -199,8 +212,23 @@ public partial class EditViewModel : ObservableObject
             friend.BirthDay = birthDay;
             friend.Memo = string.IsNullOrWhiteSpace(Memo) ? null : Memo.Trim();
             friend.NotifyEnabled = NotifyEnabled;
-            friend.NotifySound = NotifySoundEnabled;
-            friend.NotifyDaysBefore = NotifyDaysBeforeIndex; // 0=当日, 1=1日前, etc.
+            friend.NotifySoundEnabled = NotifySoundEnabled;
+
+            // NotifyDaysBeforeIndexをNotifyDaysBefore（日数）に変換
+            // 0=デフォルト, 1=無効, 2以降は具体的な日数
+            if (NotifyDaysBeforeIndex == 1)
+            {
+                friend.NotifyDaysBefore = null; // デフォルト使用
+            }
+            else if (NotifyDaysBeforeIndex > 1)
+            {
+                var notifyDaysMapping = new[] { 0, 0, 1, 2, 3, 5, 7, 14, 30 };
+                friend.NotifyDaysBefore = notifyDaysMapping[NotifyDaysBeforeIndex];
+            }
+            else
+            {
+                friend.NotifyDaysBefore = null; // デフォルト使用
+            }
 
             // エイリアスを更新
             friend.Aliases.Clear();
