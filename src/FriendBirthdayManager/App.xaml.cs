@@ -17,6 +17,8 @@ namespace FriendBirthdayManager;
 public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
+    private ITrayIconService? _trayIconService;
+    private INotificationService? _notificationService;
 
     public App()
     {
@@ -40,9 +42,19 @@ public partial class App : Application
             // データベースの初期化
             InitializeDatabaseAsync().GetAwaiter().GetResult();
 
-            // メインウィンドウを表示
-            var mainWindow = _serviceProvider.GetRequiredService<Views.MainWindow>();
-            mainWindow.Show();
+            // タスクトレイアイコンを初期化
+            _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
+            _trayIconService.Initialize();
+
+            // アイコンを更新（直近の誕生日を取得）
+            UpdateTrayIconAsync().GetAwaiter().GetResult();
+
+            // 通知サービスを開始
+            _notificationService = _serviceProvider.GetRequiredService<INotificationService>();
+            _notificationService.Start();
+
+            // メインウィンドウは表示せず、タスクトレイのみ常駐
+            // ※ ユーザーがタスクトレイから「誕生日を追加」を選択したときに表示される
 
             Log.Information("Application started successfully");
         }
@@ -58,6 +70,12 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         Log.Information("Application shutting down...");
+
+        // 通知サービスの停止
+        _notificationService?.Stop();
+
+        // タスクトレイサービスのクリーンアップ
+        _trayIconService?.Dispose();
 
         // リソースのクリーンアップ
         if (_serviceProvider is IDisposable disposable)
@@ -116,6 +134,7 @@ public partial class App : Application
         // Repositories
         services.AddScoped<IFriendRepository, FriendRepository>();
         services.AddScoped<ISettingsRepository, SettingsRepository>();
+        services.AddScoped<INotificationHistoryRepository, NotificationHistoryRepository>();
 
         // Services
         // NOTE: NotificationServiceとTrayIconServiceはSingletonだが、
@@ -130,12 +149,14 @@ public partial class App : Application
         services.AddTransient<ListViewModel>();
         services.AddTransient<EditViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<AboutViewModel>();
 
         // Views
         services.AddTransient<Views.MainWindow>();
         services.AddTransient<Views.ListWindow>();
         services.AddTransient<Views.EditWindow>();
         services.AddTransient<Views.SettingsWindow>();
+        services.AddTransient<Views.AboutWindow>();
 
         // Logging
         services.AddLogging(builder =>
@@ -162,6 +183,36 @@ public partial class App : Application
         {
             Log.Error(ex, "Failed to initialize database");
             throw;
+        }
+    }
+
+    private async Task UpdateTrayIconAsync()
+    {
+        try
+        {
+            Log.Information("Updating tray icon...");
+
+            using var scope = _serviceProvider!.CreateScope();
+            var friendRepository = scope.ServiceProvider.GetRequiredService<IFriendRepository>();
+
+            // 直近の誕生日を取得
+            var upcomingBirthdays = await friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
+            if (upcomingBirthdays.Count > 0)
+            {
+                var nextFriend = upcomingBirthdays[0];
+                var daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
+                _trayIconService?.UpdateIcon(daysUntil);
+                Log.Information("Tray icon updated: Next birthday in {Days} days", daysUntil);
+            }
+            else
+            {
+                _trayIconService?.UpdateIcon(null);
+                Log.Information("Tray icon updated: No upcoming birthdays");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to update tray icon");
         }
     }
 }

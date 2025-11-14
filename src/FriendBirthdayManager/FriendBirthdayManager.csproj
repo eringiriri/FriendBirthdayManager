@@ -27,6 +27,10 @@
     <None Update="Resources\Icons\*.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Resources\Icons\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Resource Include="Resources\Icons\*.png" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FriendBirthdayManager.Data;
 using FriendBirthdayManager.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FriendBirthdayManager.ViewModels;
@@ -15,6 +16,7 @@ namespace FriendBirthdayManager.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly IFriendRepository _friendRepository;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -44,9 +46,13 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = "準備完了";
 
-    public MainViewModel(IFriendRepository friendRepository, ILogger<MainViewModel> logger)
+    public MainViewModel(
+        IFriendRepository friendRepository,
+        IServiceProvider serviceProvider,
+        ILogger<MainViewModel> logger)
     {
         _friendRepository = friendRepository;
+        _serviceProvider = serviceProvider;
         _logger = logger;
 
         // 直近の誕生日を読み込み
@@ -197,9 +203,18 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ShowList()
     {
-        // TODO: 一覧画面を表示
-        _logger.LogInformation("ShowList command executed");
-        MessageBox.Show("一覧画面は実装中です。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+        try
+        {
+            _logger.LogInformation("ShowList command executed");
+            var listWindow = _serviceProvider.GetRequiredService<Views.ListWindow>();
+            listWindow.Show();
+            listWindow.Activate();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to show list window");
+            MessageBox.Show("一覧画面の表示に失敗しました。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void ClearForm()
