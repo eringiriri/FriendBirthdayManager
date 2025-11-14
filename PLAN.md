@@ -30,13 +30,24 @@
 | DI コンテナ | Microsoft.Extensions.DependencyInjection | 8.0+ | テスタビリティ向上 |
 | タスクトレイ | Hardcodet.NotifyIcon.Wpf | 1.1.0+ | WPF用タスクトレイライブラリ |
 | 通知 | Microsoft.Toolkit.Uwp.Notifications | 7.1.2+ | Windowsトースト通知 |
-| アイコン生成 | SkiaSharp | 2.88.0+ | クロスプラットフォーム描画（System.Drawingより推奨） |
 | ログ | Serilog | 3.1.0+ | 構造化ログ、ファイル出力 |
 | テスト | xUnit + FluentAssertions + Moq | 最新 | 単体テスト、モック |
 
 ### 代替案: Rust (非推奨)
 - **課題**: GUI フレームワーク未成熟、開発時間2-3倍、タスクトレイ実装が複雑
 - **判断**: このプロジェクトには C# が最適
+
+### ⚠️ ライブラリのメンテナンス状況について
+
+**注意**: 開発開始前に以下のライブラリの最新状況を確認してください。
+
+- **Hardcodet.NotifyIcon.Wpf**: 2018年以降更新が停止している可能性があります。代替として [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon) の使用を検討してください。
+- **Microsoft.Toolkit.Uwp.Notifications**: [CommunityToolkit.Notifications](https://www.nuget.org/packages/CommunityToolkit.WinUI.Notifications/) への移行が推奨されています。最新のパッケージ名とバージョンを確認してください。
+
+**推奨手順**:
+1. プロジェクト開始前にNuGetで各ライブラリの最終更新日を確認
+2. メンテナンスが停止している場合は、代替ライブラリを検討
+3. GitHub Issuesで既知の問題を確認
 
 ---
 
@@ -55,9 +66,9 @@
 | birth_month | INTEGER | NULL CHECK(birth_month IS NULL OR (birth_month BETWEEN 1 AND 12)) | 誕生月（1-12） |
 | birth_day | INTEGER | NULL CHECK(birth_day IS NULL OR (birth_day BETWEEN 1 AND 31)) | 誕生日（1-31） |
 | memo | TEXT | NULL | メモ |
-| notify_days_before | INTEGER | NULL CHECK(notify_days_before BETWEEN 1 AND 30) | 個人通知設定（NULL=デフォルト使用） |
+| notify_days_before | INTEGER | NULL CHECK(notify_days_before IS NULL OR (notify_days_before BETWEEN 1 AND 30)) | 個人通知設定（NULL=デフォルト使用） |
 | notify_enabled | INTEGER | NOT NULL DEFAULT 1 CHECK(notify_enabled IN (0, 1)) | 通知有効フラグ |
-| notify_sound_enabled | INTEGER | NULL CHECK(notify_sound_enabled IN (0, 1)) | 音声通知（NULL=デフォルト） |
+| notify_sound_enabled | INTEGER | NULL CHECK(notify_sound_enabled IS NULL OR (notify_sound_enabled IN (0, 1))) | 音声通知（NULL=デフォルト） |
 | created_at | TEXT | NOT NULL | 作成日時（ISO 8601） |
 | updated_at | TEXT | NOT NULL | 更新日時（ISO 8601） |
 
@@ -141,6 +152,42 @@ CREATE INDEX idx_notification_history_date ON notification_history(notification_
 **自動削除**:
 - 30日より古い履歴は自動削除（アプリ起動時にクリーンアップ）
 
+**実装例**:
+```csharp
+public class NotificationHistoryCleanupService
+{
+    private readonly AppDbContext _context;
+    private readonly ILogger<NotificationHistoryCleanupService> _logger;
+
+    public async Task CleanupOldHistoryAsync()
+    {
+        var cutoffDate = DateTime.UtcNow.Date.AddDays(-30).ToString("yyyy-MM-dd");
+
+        var deletedCount = await _context.Database
+            .ExecuteSqlRawAsync(
+                "DELETE FROM notification_history WHERE notification_date < {0}",
+                cutoffDate
+            );
+
+        _logger.LogInformation("Deleted {DeletedCount} old notification history records", deletedCount);
+    }
+}
+
+// アプリケーション起動時に実行
+public partial class App : Application
+{
+    protected override async void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+
+        var cleanupService = _serviceProvider.GetRequiredService<NotificationHistoryCleanupService>();
+        await cleanupService.CleanupOldHistoryAsync();
+
+        // ... (他の起動処理)
+    }
+}
+```
+
 #### 5. `friends_fts` テーブル（FTS5 仮想テーブル）
 高速フルテキスト検索用
 
@@ -153,10 +200,10 @@ CREATE VIRTUAL TABLE friends_fts USING fts5(
 );
 
 -- トリガーでfriends テーブルと同期
--- NOTE: memoはNULLable。SQLiteのFTS5はNULL値を空文字列として扱うため問題なし
+-- NOTE: memoはNULLable。FTS5ではNULLを空文字列に変換する必要がある
 CREATE TRIGGER friends_ai AFTER INSERT ON friends BEGIN
     INSERT INTO friends_fts(rowid, name, memo)
-    VALUES (new.id, new.name, new.memo);
+    VALUES (new.id, new.name, COALESCE(new.memo, ''));
 END;
 
 CREATE TRIGGER friends_ad AFTER DELETE ON friends BEGIN
@@ -164,7 +211,7 @@ CREATE TRIGGER friends_ad AFTER DELETE ON friends BEGIN
 END;
 
 CREATE TRIGGER friends_au AFTER UPDATE ON friends BEGIN
-    UPDATE friends_fts SET name = new.name, memo = new.memo
+    UPDATE friends_fts SET name = new.name, memo = COALESCE(new.memo, '')
     WHERE rowid = new.id;
 END;
 ```
@@ -176,7 +223,7 @@ END;
 - 起動時にバージョンチェック、必要に応じてマイグレーション実行
 - マイグレーション前に自動バックアップ
 
-**マイグレーション例**:
+**マイグレーション実装例**:
 ```csharp
 public interface IDatabaseMigration
 {
@@ -187,7 +234,124 @@ public interface IDatabaseMigration
 public class Migration_001_AddAliasesTable : IDatabaseMigration
 {
     public int TargetVersion => 1;
-    // 実装...
+
+    public async Task MigrateAsync(SqliteConnection connection)
+    {
+        await using var transaction = await connection.BeginTransactionAsync();
+
+        try
+        {
+            // エイリアステーブルの作成
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS aliases (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    friend_id INTEGER NOT NULL,
+                    alias TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (friend_id) REFERENCES friends(id) ON DELETE CASCADE,
+                    UNIQUE(friend_id, alias)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_aliases_friend_id ON aliases(friend_id);
+                CREATE INDEX IF NOT EXISTS idx_aliases_alias ON aliases(alias);
+            ";
+            await cmd.ExecuteNonQueryAsync();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+}
+
+public class MigrationRunner
+{
+    private readonly AppDbContext _context;
+    private readonly ILogger<MigrationRunner> _logger;
+    private readonly IEnumerable<IDatabaseMigration> _migrations;
+
+    public MigrationRunner(
+        AppDbContext context,
+        ILogger<MigrationRunner> logger,
+        IEnumerable<IDatabaseMigration> migrations)
+    {
+        _context = context;
+        _logger = logger;
+        _migrations = migrations.OrderBy(m => m.TargetVersion);
+    }
+
+    public async Task RunMigrationsAsync()
+    {
+        var currentVersion = await GetCurrentSchemaVersionAsync();
+        _logger.LogInformation("Current schema version: {Version}", currentVersion);
+
+        foreach (var migration in _migrations.Where(m => m.TargetVersion > currentVersion))
+        {
+            _logger.LogInformation("Running migration to version {Version}", migration.TargetVersion);
+
+            // バックアップ作成
+            await CreateBackupAsync();
+
+            try
+            {
+                var connection = (SqliteConnection)_context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                await migration.MigrateAsync(connection);
+                await SetSchemaVersionAsync(migration.TargetVersion);
+
+                _logger.LogInformation("Migration to version {Version} completed", migration.TargetVersion);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Migration to version {Version} failed", migration.TargetVersion);
+                throw;
+            }
+        }
+    }
+
+    private async Task<int> GetCurrentSchemaVersionAsync()
+    {
+        var version = await _context.Settings
+            .Where(s => s.Key == "schema_version")
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync();
+
+        return int.TryParse(version, out var v) ? v : 0;
+    }
+
+    private async Task SetSchemaVersionAsync(int version)
+    {
+        var setting = await _context.Settings.FindAsync("schema_version");
+        if (setting == null)
+        {
+            _context.Settings.Add(new Setting
+            {
+                Key = "schema_version",
+                Value = version.ToString(),
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            setting.Value = version.ToString();
+            setting.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task CreateBackupAsync()
+    {
+        var dbPath = _context.Database.GetDbConnection().DataSource;
+        var backupPath = $"{dbPath}.backup_{DateTime.Now:yyyyMMddHHmmss}";
+
+        await Task.Run(() => File.Copy(dbPath, backupPath, overwrite: false));
+        _logger.LogInformation("Database backup created: {BackupPath}", backupPath);
+    }
 }
 ```
 
@@ -454,17 +618,21 @@ public class Migration_001_AddAliasesTable : IDatabaseMigration
 ```
 
 #### アイコン表示仕様
-- **1~9日以内に誕生日がある場合**: 日数を表示（例: `3`）
-- **10日以上先の場合**: `🎂` ケーキアイコンを表示
+- **1~9日以内に誕生日がある場合**: 対応する日数のアイコンを表示（例: `1.ico`, `2.ico`, ..., `9.ico`）
+- **10日以上先、または誕生日当日の場合**: ケーキアイコンを表示（`birthday.ico`）
 - **アイコンサイズ**: 16x16px（標準）、32x32px（高DPI）、48x48px（超高DPI）
 - **形式**: ICO形式（マルチサイズ対応）
-- **動的生成**: SkiaSharpで描画
-  - フォント: "Segoe UI", Bold, 10pt
-  - 色: 白文字、黒縁取り（可読性確保）
-  - 背景: 誕生日の緊急度に応じてグラデーション
-    - 1-3日: 赤系（#FF4444）
-    - 4-6日: オレンジ系（#FF8800）
-    - 7-9日: 黄色系（#FFCC00）
+- **準備が必要なアイコンファイル**:
+  - `Resources/Icons/birthday.ico` - 誕生日ケーキ（デフォルト）
+  - `Resources/Icons/1.ico` - 数字1
+  - `Resources/Icons/2.ico` - 数字2
+  - `Resources/Icons/3.ico` - 数字3
+  - `Resources/Icons/4.ico` - 数字4
+  - `Resources/Icons/5.ico` - 数字5
+  - `Resources/Icons/6.ico` - 数字6
+  - `Resources/Icons/7.ico` - 数字7
+  - `Resources/Icons/8.ico` - 数字8
+  - `Resources/Icons/9.ico` - 数字9
 
 ---
 
@@ -518,7 +686,7 @@ public bool ShouldNotifyToday(Friend friend, DateTime today, int daysBefore)
     if (!friend.BirthMonth.HasValue || !friend.BirthDay.HasValue) return false; // 月日が必要
 
     var nextBirthday = CalculateNextBirthday(today, friend.BirthMonth.Value, friend.BirthDay.Value);
-    var daysUntil = (nextBirthday - today).Days;
+    var daysUntil = (nextBirthday.Date - today.Date).Days; // 時刻部分を除外して計算
 
     return daysUntil >= 0 && daysUntil <= daysBefore;
 }
@@ -567,7 +735,6 @@ var friends = await dbContext.Friends
 ### パフォーマンス目標
 - 1,000件のデータで検索応答時間 < 50ms
 - 10,000件のデータで検索応答時間 < 200ms
-- 100,000件のデータでも動作可能（検索応答時間 < 1秒）
 
 ---
 
@@ -862,13 +1029,61 @@ public async Task<ImportResult> ImportAsync(string filePath)
         throw new InvalidOperationException("データ件数が多すぎます（10万件以下）");
 
     // 各フィールドの長さ検証
-    // Excel数式インジェクション対策（=, +, -, @で始まるセルに'を付加して無害化）
+    // Excel数式インジェクション対策の実装は下記CsvServiceを参照
+}
+
+// Excel数式インジェクション対策の実装例
+public string SanitizeForCsv(string value)
+{
+    if (string.IsNullOrEmpty(value))
+        return value;
+
+    // =, +, -, @で始まるセルに'を付加して無害化
+    if (value.StartsWith("=") || value.StartsWith("+") ||
+        value.StartsWith("-") || value.StartsWith("@"))
+    {
+        return "'" + value;
+    }
+
+    return value;
+}
+
+public async Task<bool> ExportAsync(string filePath)
+{
+    var friends = await _friendRepository.GetAllAsync();
+
+    using var writer = new StreamWriter(filePath, false, new UTF8Encoding(true)); // BOM付き
+    using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+
+    // ヘッダー書き込み
+    await csv.WriteFieldAsync("name");
+    await csv.WriteFieldAsync("birth_year");
+    // ... (他のヘッダー)
+    await csv.NextRecordAsync();
+
+    // データ書き込み（Excel数式インジェクション対策適用）
+    foreach (var friend in friends)
+    {
+        await csv.WriteFieldAsync(SanitizeForCsv(friend.Name));
+        await csv.WriteFieldAsync(friend.BirthYear?.ToString() ?? "");
+        await csv.WriteFieldAsync(friend.BirthMonth?.ToString() ?? "");
+        await csv.WriteFieldAsync(friend.BirthDay?.ToString() ?? "");
+
+        var aliases = string.Join(",", friend.Aliases.Select(a => SanitizeForCsv(a.Alias)));
+        await csv.WriteFieldAsync(aliases);
+
+        await csv.WriteFieldAsync(SanitizeForCsv(friend.Memo ?? ""));
+        // ... (他のフィールド)
+        await csv.NextRecordAsync();
+    }
+
+    return true;
 }
 ```
 
 ### 3. パス操作の安全性
-- データベースパス、ログパスはユーザーディレクトリ配下に限定
-- パストラバーサル攻撃を防ぐため `Path.GetFullPath()` で正規化
+- データベースパス、ログパスは相対パスまたは絶対パスで指定可能
+- パストラバーサル攻撃を防ぐため、外部入力を受け付ける場合は `Path.GetFullPath()` で正規化
 
 ---
 
@@ -890,9 +1105,9 @@ public async Task<ImportResult> ImportAsync(string filePath)
 - 友人リストは変更時に無効化
 
 ### 5. パフォーマンステスト計画
-- 100件、1,000件、10,000件、100,000件のデータセットでベンチマーク
+- 100件、1,000件、10,000件のデータセットでベンチマーク
 - 起動時間 < 3秒
-- 検索応答時間: 1,000件 < 50ms、10,000件 < 200ms、100,000件 < 1秒
+- 検索応答時間: 1,000件 < 50ms、10,000件 < 200ms
 
 ---
 
@@ -1202,13 +1417,22 @@ FriendBirthdayManager/
 │       │
 │       ├── Helpers/
 │       │   ├── DateHelper.cs
-│       │   ├── IconGenerator.cs           # SkiaSharp使用
+│       │   ├── IconSelector.cs            # 静的アイコンファイル選択
 │       │   ├── ValidationHelper.cs
 │       │   └── CsvValidator.cs
 │       │
 │       ├── Resources/
 │       │   ├── Icons/
-│       │   │   └── default.ico
+│       │   │   ├── birthday.ico          # 誕生日ケーキ（デフォルト）
+│       │   │   ├── 1.ico                 # 数字1~9
+│       │   │   ├── 2.ico
+│       │   │   ├── 3.ico
+│       │   │   ├── 4.ico
+│       │   │   ├── 5.ico
+│       │   │   ├── 6.ico
+│       │   │   ├── 7.ico
+│       │   │   ├── 8.ico
+│       │   │   └── 9.ico
 │       │   ├── Sounds/
 │       │   │   └── notification.wav
 │       │   └── Strings/                   # i18n対応
@@ -1253,7 +1477,6 @@ FriendBirthdayManager/
   - Microsoft.Toolkit.Uwp.Notifications
   - CommunityToolkit.Mvvm
   - Microsoft.Extensions.DependencyInjection
-  - SkiaSharp
   - Serilog
   - xUnit, FluentAssertions, Moq
 - [ ] フォルダ構成作成
@@ -1359,12 +1582,12 @@ FriendBirthdayManager/
 - [ ] 単体テストカバレッジ80%達成
 - [ ] 統合テスト
 - [ ] 手動UIテスト（全機能）
-- [ ] パフォーマンステスト（100/1,000/10,000/100,000件）
+- [ ] パフォーマンステスト（100/1,000/10,000件）
 - [ ] エッジケーステスト（うるう年、重複、etc.）
 - [ ] セキュリティテスト（CSV悪意ファイル）
 
 **依存関係**: Phase 1-8完了
-**マイルストーン**: バグ0件、パフォーマンス目標達成（10,000件 < 200ms、100,000件 < 1秒）
+**マイルストーン**: バグ0件、パフォーマンス目標達成（1,000件 < 50ms、10,000件 < 200ms）
 
 ---
 
@@ -1414,70 +1637,68 @@ FriendBirthdayManager/
 
 ## 🖼️ アイコン仕様（改訂版）
 
-### タスクトレイアイコン（動的生成）
+### タスクトレイアイコン（静的ファイル使用）
 
 **サイズ**: 16x16px、32x32px、48x48px（マルチサイズICO）
-**形式**: ICO形式（推奨）、PNG（透過）
-**ライブラリ**: SkiaSharp（System.Drawingは非推奨）
+**形式**: ICO形式（推奨）
+**配置場所**: `Resources/Icons/` ディレクトリ
 
-**生成ロジック**:
+**必要なアイコンファイル**:
+- `birthday.ico` - 誕生日ケーキ（デフォルト、10日以上先または誕生日当日）
+- `1.ico` - 数字1（1日前）
+- `2.ico` - 数字2（2日前）
+- `3.ico` - 数字3（3日前）
+- `4.ico` - 数字4（4日前）
+- `5.ico` - 数字5（5日前）
+- `6.ico` - 数字6（6日前）
+- `7.ico` - 数字7（7日前）
+- `8.ico` - 数字8（8日前）
+- `9.ico` - 数字9（9日前）
+
+**アイコン選択ロジック**:
 ```csharp
-public class IconGenerator
+public class IconSelector
 {
-    public Icon GenerateTrayIcon(int? daysUntil)
+    private readonly Dictionary<int, Icon> _iconCache = new();
+    private readonly Icon _defaultIcon;
+
+    public IconSelector()
     {
-        using var surface = SKSurface.Create(new SKImageInfo(32, 32));
-        var canvas = surface.Canvas;
+        // アイコンファイルを事前読み込み
+        _defaultIcon = LoadIcon("Resources/Icons/birthday.ico");
 
-        // 背景グラデーション
-        var paint = new SKPaint
+        for (int i = 1; i <= 9; i++)
         {
-            Shader = SKShader.CreateLinearGradient(
-                new SKPoint(0, 0), new SKPoint(32, 32),
-                new[] { GetColorForDays(daysUntil), SKColors.White },
-                SKShaderTileMode.Clamp
-            )
-        };
-        canvas.DrawRect(0, 0, 32, 32, paint);
-
-        // テキスト描画
-        var textPaint = new SKPaint
-        {
-            Color = SKColors.White,
-            TextSize = 20,
-            IsAntialias = true,
-            Typeface = SKTypeface.FromFamilyName("Segoe UI", SKFontStyle.Bold)
-        };
-
-        var text = daysUntil.HasValue && daysUntil.Value <= 9
-            ? daysUntil.Value.ToString()
-            : "🎂";
-
-        // 縁取り（可読性向上）
-        var strokePaint = textPaint.Clone();
-        strokePaint.Style = SKPaintStyle.Stroke;
-        strokePaint.StrokeWidth = 2;
-        strokePaint.Color = SKColors.Black;
-
-        canvas.DrawText(text, 8, 24, strokePaint);
-        canvas.DrawText(text, 8, 24, textPaint);
-
-        // ICOに変換して返す
-        return ConvertToIcon(surface.Snapshot());
+            _iconCache[i] = LoadIcon($"Resources/Icons/{i}.ico");
+        }
     }
 
-    private SKColor GetColorForDays(int? days)
+    public Icon GetTrayIcon(int? daysUntil)
     {
-        return days switch
+        if (daysUntil.HasValue && daysUntil.Value >= 1 && daysUntil.Value <= 9)
         {
-            <= 3 => new SKColor(255, 68, 68),   // 赤
-            <= 6 => new SKColor(255, 136, 0),   // オレンジ
-            <= 9 => new SKColor(255, 204, 0),   // 黄色
-            _ => new SKColor(100, 149, 237)     // コーンフラワーブルー
-        };
+            return _iconCache[daysUntil.Value];
+        }
+
+        return _defaultIcon; // 10日以上先、または誕生日当日、またはnull
+    }
+
+    private Icon LoadIcon(string path)
+    {
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"Icon file not found: {path}");
+        }
+
+        return new Icon(path);
     }
 }
 ```
+
+**注意事項**:
+- アイコンファイルは事前に用意する必要があります
+- アイコンはマルチサイズ（16x16, 32x32, 48x48）を含むICO形式を推奨
+- SkiaSharpライブラリは不要になります（依存関係を削減）
 
 ---
 
@@ -1560,11 +1781,12 @@ _logger.LogError(ex, "Database operation failed");
 public async Task<bool> AddAsync(Friend friend)
 {
     // 同名同誕生日のレコードを検索
+    // NOTE: SQLではNULL == NULLはfalseになるため、NULL値の比較は個別に処理する必要がある
     var duplicate = await _context.Friends
         .Where(f => f.Name == friend.Name
-                 && f.BirthYear == friend.BirthYear
-                 && f.BirthMonth == friend.BirthMonth
-                 && f.BirthDay == friend.BirthDay)
+                 && (f.BirthYear == friend.BirthYear || (f.BirthYear == null && friend.BirthYear == null))
+                 && (f.BirthMonth == friend.BirthMonth || (f.BirthMonth == null && friend.BirthMonth == null))
+                 && (f.BirthDay == friend.BirthDay || (f.BirthDay == null && friend.BirthDay == null)))
         .FirstOrDefaultAsync();
 
     if (duplicate != null)
@@ -1605,12 +1827,13 @@ ID=2を編集してBirthDay=5に変更した場合:
 public async Task<bool> UpdateAsync(Friend friend)
 {
     // 自分自身を除外して同名同誕生日のレコードを検索
+    // NOTE: SQLではNULL == NULLはfalseになるため、NULL値の比較は個別に処理する必要がある
     var duplicate = await _context.Friends
         .Where(f => f.Id != friend.Id)  // 👈 自分自身を除外
         .Where(f => f.Name == friend.Name
-                 && f.BirthYear == friend.BirthYear
-                 && f.BirthMonth == friend.BirthMonth
-                 && f.BirthDay == friend.BirthDay)
+                 && (f.BirthYear == friend.BirthYear || (f.BirthYear == null && friend.BirthYear == null))
+                 && (f.BirthMonth == friend.BirthMonth || (f.BirthMonth == null && friend.BirthMonth == null))
+                 && (f.BirthDay == friend.BirthDay || (f.BirthDay == null && friend.BirthDay == null)))
         .FirstOrDefaultAsync();
 
     if (duplicate != null)
@@ -1775,28 +1998,20 @@ public async Task UpdateAsync_WhenNotCreatingDuplicate_NoConfirmation()
 3. 12月1日（あと17日）
 4. 1月5日（あと52日）
 5. 10月1日（あと321日） ← 来年の誕生日
-6. 田中次郎（未設定）--- ← 誕生日未設定は最後
-7. 鈴木一郎（2000年のみ）--- ← 部分入力も最後
-8. 佐藤花子（5月のみ）--- ← 部分入力も最後
+6. 佐藤花子（5月のみ）--- ← 誕生日未設定・部分入力は最後（名前順でソート）
+7. 鈴木一郎（2000年のみ）---
+8. 田中次郎（未設定）---
 ```
 
-### 5. CSV フォーマット（RFC 4180準拠）
+**並び替えルール**:
+- **近い順**: 誕生日までの日数（昇順）→ 同日の場合は名前順（Unicode順）
+- **日付順**: 月日（1月1日→12月31日）→ 同日の場合は名前順
+- **名前順**: Unicode順（C#のstring.Compare使用）
+- **誕生日未設定・部分入力**: 常に最後に表示し、名前順でソート
 
-```csv
-name,birth_year,birth_month,birth_day,aliases,memo,notify_days_before,notify_enabled,notify_sound_enabled
-山田太郎,2000,5,15,"tarou,taro,たろー",高校時代の友人,3,1,1
-佐藤花子,,5,25,"hanako,はなこ","大学の先輩
-2行目も可能",,1,
-鈴木一郎,2000,,,ichiro,2000年生まれ,,,1
-田中花子,,5,,hanako,5月生まれ（日不明）,,,1
-田中次郎,,,,,,,0,
-```
+### 5. CSV フォーマット
 
-- **エンコーディング**: UTF-8 BOM付き
-- **改行コード**: CRLF
-- **ヘッダー行**: 必須
-- **NULL値**: 空欄
-- **エスケープ**: RFC 4180準拠
+詳細は「## 📄 CSV仕様（明確化版）」セクションを参照してください。
 
 ---
 
@@ -1818,7 +2033,6 @@ dotnet add package Microsoft.Extensions.DependencyInjection
 dotnet add package Hardcodet.NotifyIcon.Wpf
 dotnet add package Microsoft.Toolkit.Uwp.Notifications
 dotnet add package CommunityToolkit.Mvvm
-dotnet add package SkiaSharp
 dotnet add package Serilog.Sinks.File
 
 # テストプロジェクト作成
@@ -1854,7 +2068,6 @@ dotnet ef database update
 - [Entity Framework Core](https://learn.microsoft.com/ja-jp/ef/core/)
 - [SQLite FTS5](https://www.sqlite.org/fts5.html)
 - [Windows Notifications](https://learn.microsoft.com/ja-jp/windows/apps/design/shell/tiles-and-notifications/adaptive-interactive-toasts)
-- [SkiaSharp Documentation](https://docs.microsoft.com/ja-jp/xamarin/xamarin-forms/user-interface/graphics/skiasharp/)
 
 ### ライブラリ
 - [Hardcodet NotifyIcon WPF](https://github.com/hardcodet/wpf-notifyicon)
@@ -1875,7 +2088,6 @@ dotnet ef database update
 
 ### 成功指標
 - [x] 10,000件の友人を登録してもスムーズに動作（検索 < 200ms）
-- [x] 100,000件のデータでも動作可能（検索 < 1秒）
 - [x] 通知が確実に届く（失敗時はリトライ＆ログ記録）
 - [x] エイリアス検索が高速（FTS5使用）
 - [x] データのバックアップ・復元が簡単（CSV I/O）
@@ -1907,8 +2119,8 @@ dotnet ef database update
 ## 次のステップ
 
 1. ✅ **このドキュメントをレビュー完了**
-2. **Phase 1（プロジェクト基盤構築）を開始**
-3. アイコン画像を準備（ICO/PNG形式）
+2. **アイコン画像を準備**（10個のICOファイル: birthday.ico, 1.ico～9.ico）
+3. **Phase 1（プロジェクト基盤構築）を開始**
 4. GitHub リポジトリ作成、ブランチ運用ルール決定
 
 **質問や懸念事項があれば、お気軽にお聞きください！**
