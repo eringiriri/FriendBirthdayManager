@@ -8,6 +8,16 @@ namespace FriendBirthdayManager.Services;
 public interface INotificationService
 {
     /// <summary>
+    /// 通知サービスを開始
+    /// </summary>
+    void Start();
+
+    /// <summary>
+    /// 通知サービスを停止
+    /// </summary>
+    void Stop();
+
+    /// <summary>
     /// 通知対象をチェックして通知を送信
     /// </summary>
     Task CheckAndNotifyAsync(CancellationToken cancellationToken = default);

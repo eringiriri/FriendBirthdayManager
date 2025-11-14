@@ -18,6 +18,7 @@ public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
     private ITrayIconService? _trayIconService;
+    private INotificationService? _notificationService;
 
     public App()
     {
@@ -48,6 +49,10 @@ public partial class App : Application
             // アイコンを更新（直近の誕生日を取得）
             UpdateTrayIconAsync().GetAwaiter().GetResult();
 
+            // 通知サービスを開始
+            _notificationService = _serviceProvider.GetRequiredService<INotificationService>();
+            _notificationService.Start();
+
             // メインウィンドウは表示せず、タスクトレイのみ常駐
             // ※ ユーザーがタスクトレイから「誕生日を追加」を選択したときに表示される
 
@@ -65,6 +70,9 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         Log.Information("Application shutting down...");
+
+        // 通知サービスの停止
+        _notificationService?.Stop();
 
         // タスクトレイサービスのクリーンアップ
         _trayIconService?.Dispose();
@@ -126,6 +134,7 @@ public partial class App : Application
         // Repositories
         services.AddScoped<IFriendRepository, FriendRepository>();
         services.AddScoped<ISettingsRepository, SettingsRepository>();
+        services.AddScoped<INotificationHistoryRepository, NotificationHistoryRepository>();
 
         // Services
         // NOTE: NotificationServiceとTrayIconServiceはSingletonだが、
