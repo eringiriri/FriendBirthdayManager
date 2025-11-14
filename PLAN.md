@@ -51,7 +51,9 @@
 |---------|-----|------|------|
 | id | INTEGER | PRIMARY KEY AUTOINCREMENT | 固有ID |
 | name | TEXT | NOT NULL | 友人の名前 |
-| birthday | TEXT | NULL | 誕生日（"YYYY-MM-DD", "MM-DD", "YYYY", "MM", "DD", またはNULL） |
+| birth_year | INTEGER | NULL | 誕生年（例: 2000） |
+| birth_month | INTEGER | NULL CHECK(birth_month IS NULL OR (birth_month BETWEEN 1 AND 12)) | 誕生月（1-12） |
+| birth_day | INTEGER | NULL CHECK(birth_day IS NULL OR (birth_day BETWEEN 1 AND 31)) | 誕生日（1-31） |
 | memo | TEXT | NULL | メモ |
 | notify_days_before | INTEGER | NULL CHECK(notify_days_before BETWEEN 1 AND 30) | 個人通知設定（NULL=デフォルト使用） |
 | notify_enabled | INTEGER | NOT NULL DEFAULT 1 CHECK(notify_enabled IN (0, 1)) | 通知有効フラグ |
@@ -61,10 +63,15 @@
 
 **インデックス**:
 ```sql
-CREATE INDEX idx_friends_birthday ON friends(birthday) WHERE birthday IS NOT NULL;
+CREATE INDEX idx_friends_birth_month_day ON friends(birth_month, birth_day)
+    WHERE birth_month IS NOT NULL AND birth_day IS NOT NULL;
 CREATE INDEX idx_friends_name ON friends(name);
 CREATE INDEX idx_friends_notify_enabled ON friends(notify_enabled) WHERE notify_enabled = 1;
 ```
+
+**通知対象判定**:
+- `birth_month IS NOT NULL AND birth_day IS NOT NULL` の場合のみ通知対象
+- 年のみ、月のみ、日のみの場合は通知されない
 
 **重複登録制御**:
 - アプリケーションロジックで制御（データベース制約ではなく）
@@ -229,22 +236,26 @@ public class Migration_001_AddAliasesTable : IDatabaseMigration
 
 **機能**:
 - 入力バリデーション（**名前のみ必須**、その他任意）
-- 誕生日形式: DatePicker使用で入力ミス防止
-  - 完全形式: YYYY-MM-DD（例: 2000-05-15）→ 通知可能
-  - 月日のみ: MM-DD（例: 05-15）チェックボックスで年を省略 → 通知可能
-  - 年のみ: YYYY（例: 2000）→ 通知不可、記録のみ
-  - 月のみ: MM（例: 05）→ 通知不可、記録のみ
-  - 日のみ: DD（例: 15）→ 通知不可、記録のみ
-  - 未入力: NULL → 通知不可
+- 誕生日入力: 3つの独立したフィールド
+  - 年: [____] (例: 2000) ← 任意
+  - 月: [__] (1-12) ← 任意
+  - 日: [__] (1-31) ← 任意
+  - 💡 月と日の両方を入力すると通知対象になる
 - エイリアス: 動的に追加可能（個別の入力フィールド）
-- 直近5件の誕生日を表示（**月日が登録されている友人のみ**）
+- 直近5件の誕生日を表示（**BirthMonth と BirthDay が登録されている友人のみ**）
 - キーボードショートカット対応（Ctrl+N: 新規登録、Ctrl+L: 一覧表示）
 
 **バリデーション**:
 - 名前: 1文字以上、200文字以下
-- 誕生日: 有効な日付（うるう年考慮、部分入力も許可）
+- 年: 1900-2100の範囲（任意）
+- 月: 1-12の範囲（任意）
+- 日: 1-31の範囲（任意）、うるう年考慮
 - エイリアス: 各50文字以下
 - メモ: 5000文字以下
+
+**データベース保存**:
+- 年・月・日は個別のINTEGERカラムに保存
+- これにより「5月生まれ」と「5日生まれ」が明確に区別される
 
 ---
 
@@ -651,7 +662,9 @@ public class Friend
 
     public required string Name { get; set; }  // C# 11+ required修飾子
 
-    public string? Birthday { get; set; }  // "YYYY-MM-DD", "MM-DD", "YYYY", "MM", "DD", or NULL
+    public int? BirthYear { get; set; }   // 誕生年（例: 2000）
+    public int? BirthMonth { get; set; }  // 誕生月（1-12）
+    public int? BirthDay { get; set; }    // 誕生日（1-31）
 
     public string? Memo { get; set; }
 
@@ -671,26 +684,40 @@ public class Friend
     // ヘルパーメソッド
     public bool HasValidBirthdayForNotification()
     {
-        if (string.IsNullOrEmpty(Birthday)) return false;
-        var components = BirthdayComponents.Parse(Birthday);
-        return components.Month.HasValue && components.Day.HasValue;
+        // 月と日の両方が入力されている場合のみ通知対象
+        return BirthMonth.HasValue && BirthDay.HasValue;
     }
 
     public int? CalculateDaysUntilBirthday(DateTime referenceDate)
     {
         if (!HasValidBirthdayForNotification()) return null;
-        var components = BirthdayComponents.Parse(Birthday);
 
         var nextBirthday = new DateTime(
             referenceDate.Year,
-            components.Month!.Value,
-            components.Day!.Value
+            BirthMonth!.Value,
+            BirthDay!.Value
         );
 
         if (nextBirthday < referenceDate)
             nextBirthday = nextBirthday.AddYears(1);
 
         return (nextBirthday - referenceDate).Days;
+    }
+
+    // 表示用の誕生日文字列を生成
+    public string GetBirthdayDisplayString()
+    {
+        if (BirthYear.HasValue && BirthMonth.HasValue && BirthDay.HasValue)
+            return $"{BirthYear:0000}-{BirthMonth:00}-{BirthDay:00}";
+        if (BirthMonth.HasValue && BirthDay.HasValue)
+            return $"{BirthMonth:00}-{BirthDay:00}";
+        if (BirthYear.HasValue)
+            return $"{BirthYear}年";
+        if (BirthMonth.HasValue)
+            return $"{BirthMonth}月";
+        if (BirthDay.HasValue)
+            return $"{BirthDay}日";
+        return "未設定";
     }
 }
 
@@ -703,40 +730,6 @@ public class Alias
 
     // Navigation property
     public Friend Friend { get; set; } = null!;
-}
-
-public record BirthdayComponents(int? Year, int? Month, int? Day)
-{
-    public static BirthdayComponents Parse(string? birthday)
-    {
-        if (string.IsNullOrEmpty(birthday)) return new(null, null, null);
-
-        var parts = birthday.Split('-');
-        return parts.Length switch
-        {
-            3 => new(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2])),  // YYYY-MM-DD
-            2 => new(null, int.Parse(parts[0]), int.Parse(parts[1])),                // MM-DD
-            1 => ParseSingleComponent(parts[0]),                                      // YYYY or MM or DD
-            _ => new(null, null, null)
-        };
-    }
-
-    private static BirthdayComponents ParseSingleComponent(string value)
-    {
-        if (!int.TryParse(value, out int num)) return new(null, null, null);
-
-        // 判定ロジック: 4桁=年、1-12=月の可能性、1-31=日の可能性
-        return num switch
-        {
-            >= 1000 => new(num, null, null),           // 年のみ (YYYY)
-            >= 1 and <= 12 => new(null, num, null),    // 月のみ (MM) ※1-12は月として扱う
-            >= 13 and <= 31 => new(null, null, num),   // 日のみ (DD)
-            _ => new(null, null, null)                 // 無効
-        };
-    }
-
-    public bool IsValid() => Month.HasValue && Day.HasValue;
-    public bool IsNotificationTarget() => Month.HasValue && Day.HasValue;  // 通知対象判定
 }
 
 public class AppSettings
@@ -871,38 +864,54 @@ public async Task<ImportResult> ImportAsync(string filePath)
 public class FriendTests
 {
     [Theory]
-    [InlineData("2000-05-15", 5, 15, true)]   // 年月日 → 通知可能
-    [InlineData("05-15", 5, 15, true)]        // 月日 → 通知可能
-    [InlineData("2000", null, null, false)]   // 年のみ → 通知不可
-    [InlineData("05", null, null, false)]     // 月のみ → 通知不可
-    [InlineData("15", null, null, false)]     // 日のみ → 通知不可
-    [InlineData(null, null, null, false)]     // 未入力 → 通知不可
+    [InlineData(2000, 5, 15, true)]    // 年月日 → 通知可能
+    [InlineData(null, 5, 15, true)]    // 月日のみ → 通知可能
+    [InlineData(2000, null, null, false)]  // 年のみ → 通知不可
+    [InlineData(null, 5, null, false)]     // 月のみ → 通知不可
+    [InlineData(null, null, 15, false)]    // 日のみ → 通知不可
+    [InlineData(null, null, null, false)]  // 未入力 → 通知不可
     public void HasValidBirthdayForNotification_ReturnsExpected(
-        string? birthday, int? month, int? day, bool expected)
+        int? year, int? month, int? day, bool expected)
     {
-        var friend = new Friend { Name = "Test", Birthday = birthday };
+        var friend = new Friend
+        {
+            Name = "Test",
+            BirthYear = year,
+            BirthMonth = month,
+            BirthDay = day
+        };
         friend.HasValidBirthdayForNotification().Should().Be(expected);
     }
 
     [Theory]
-    [InlineData("2000", 2000, null, null)]    // 年のみ
-    [InlineData("05", null, 5, null)]         // 月のみ
-    [InlineData("15", null, null, 15)]        // 日のみ（13-31）
-    [InlineData("2000-05-15", 2000, 5, 15)]   // 完全
-    [InlineData("05-15", null, 5, 15)]        // 月日
-    public void BirthdayComponents_ParsePartialDates_ReturnsExpected(
-        string? input, int? expectedYear, int? expectedMonth, int? expectedDay)
+    [InlineData(2000, 5, 15, "2000-05-15")]   // 完全形式
+    [InlineData(null, 5, 15, "05-15")]        // 月日のみ
+    [InlineData(2000, null, null, "2000年")]  // 年のみ
+    [InlineData(null, 5, null, "5月")]        // 月のみ
+    [InlineData(null, null, 15, "15日")]      // 日のみ
+    [InlineData(null, null, null, "未設定")]  // 未入力
+    public void GetBirthdayDisplayString_ReturnsExpected(
+        int? year, int? month, int? day, string expected)
     {
-        var components = BirthdayComponents.Parse(input);
-        components.Year.Should().Be(expectedYear);
-        components.Month.Should().Be(expectedMonth);
-        components.Day.Should().Be(expectedDay);
+        var friend = new Friend
+        {
+            Name = "Test",
+            BirthYear = year,
+            BirthMonth = month,
+            BirthDay = day
+        };
+        friend.GetBirthdayDisplayString().Should().Be(expected);
     }
 
     [Fact]
     public void CalculateDaysUntilBirthday_LeapYear_ReturnsCorrectDays()
     {
-        var friend = new Friend { Name = "Test", Birthday = "02-29" };
+        var friend = new Friend
+        {
+            Name = "Test",
+            BirthMonth = 2,
+            BirthDay = 29
+        };
         var referenceDate = new DateTime(2024, 2, 28); // うるう年
         friend.CalculateDaysUntilBirthday(referenceDate).Should().Be(1);
 
@@ -1002,14 +1011,18 @@ public class DatabaseIntegrationTests : IDisposable
 ### フォーマット
 
 ```csv
-name,birthday,aliases,memo,notify_days_before,notify_enabled,notify_sound_enabled
-山田太郎,2000-05-15,"tarou,taro,たろー",高校時代の友人,3,1,1
-佐藤花子,05-25,"hanako,はなこ","大学の先輩
+name,birth_year,birth_month,birth_day,aliases,memo,notify_days_before,notify_enabled,notify_sound_enabled
+山田太郎,2000,5,15,"tarou,taro,たろー",高校時代の友人,3,1,1
+佐藤花子,,5,25,"hanako,はなこ","大学の先輩
 2行目のメモ",,1,
-鈴木一郎,2000,ichiro,2000年生まれ（月日不明）,,,1
-田中花子,05,hanako,5月生まれ（日不明）,,,1
-田中次郎,,,,,,0
+鈴木一郎,2000,,,ichiro,2000年生まれ（月日不明）,,,1
+田中花子,,5,,hanako,5月生まれ（日不明）,,,1
+田中次郎,,,,,,,,,0
 ```
+
+**重要な変更点**:
+- `birthday` カラムを `birth_year`, `birth_month`, `birth_day` の3カラムに分割
+- これにより「5月生まれ」(birth_month=5) と「5日生まれ」(birth_day=5) が明確に区別できる
 
 ### 仕様詳細
 
@@ -1477,14 +1490,16 @@ public async Task<bool> AddAsync(Friend friend)
     // 同名同誕生日のレコードを検索
     var duplicate = await _context.Friends
         .Where(f => f.Name == friend.Name
-                 && f.Birthday == friend.Birthday)
+                 && f.BirthYear == friend.BirthYear
+                 && f.BirthMonth == friend.BirthMonth
+                 && f.BirthDay == friend.BirthDay)
         .FirstOrDefaultAsync();
 
     if (duplicate != null)
     {
-        // 確認ダイアログ: 「山田太郎（2000-05-15）が既に登録されています。それでも登録しますか？」
+        var birthdayStr = friend.GetBirthdayDisplayString();
         var result = await ShowConfirmationDialog(
-            $"{friend.Name}（{friend.Birthday}）が既に登録されています。\n" +
+            $"{friend.Name}（{birthdayStr}）が既に登録されています。\n" +
             "同名同誕生日の別人として登録する場合は、メモやエイリアスで区別してください。\n" +
             "登録しますか？"
         );
@@ -1506,10 +1521,10 @@ public async Task<bool> AddAsync(Friend friend)
 **問題となるケース**:
 ```
 初期状態:
-  ID=1: 山田太郎, 2000-05-05
-  ID=2: 山田太郎, 2000-05-04
+  ID=1: 山田太郎, BirthYear=2000, BirthMonth=5, BirthDay=5
+  ID=2: 山田太郎, BirthYear=2000, BirthMonth=5, BirthDay=4
 
-ID=2を編集して「2000-05-05」に変更した場合:
+ID=2を編集してBirthDay=5に変更した場合:
   → ID=1と同名同誕生日になってしまう
 ```
 
@@ -1521,14 +1536,16 @@ public async Task<bool> UpdateAsync(Friend friend)
     var duplicate = await _context.Friends
         .Where(f => f.Id != friend.Id)  // 👈 自分自身を除外
         .Where(f => f.Name == friend.Name
-                 && f.Birthday == friend.Birthday)
+                 && f.BirthYear == friend.BirthYear
+                 && f.BirthMonth == friend.BirthMonth
+                 && f.BirthDay == friend.BirthDay)
         .FirstOrDefaultAsync();
 
     if (duplicate != null)
     {
-        // 確認ダイアログ
+        var birthdayStr = friend.GetBirthdayDisplayString();
         var result = await ShowConfirmationDialog(
-            $"{friend.Name}（{friend.Birthday}）が既に登録されています（ID={duplicate.Id}）。\n" +
+            $"{friend.Name}（{birthdayStr}）が既に登録されています（ID={duplicate.Id}）。\n" +
             "同名同誕生日になりますが、更新しますか？"
         );
 
@@ -1549,13 +1566,27 @@ public async Task<bool> UpdateAsync(Friend friend)
 public async Task UpdateAsync_WhenCreatingDuplicate_ShowsConfirmation()
 {
     // Arrange
-    var friend1 = new Friend { Id = 1, Name = "山田太郎", Birthday = "2000-05-05" };
-    var friend2 = new Friend { Id = 2, Name = "山田太郎", Birthday = "2000-05-04" };
+    var friend1 = new Friend
+    {
+        Id = 1,
+        Name = "山田太郎",
+        BirthYear = 2000,
+        BirthMonth = 5,
+        BirthDay = 5
+    };
+    var friend2 = new Friend
+    {
+        Id = 2,
+        Name = "山田太郎",
+        BirthYear = 2000,
+        BirthMonth = 5,
+        BirthDay = 4
+    };
     await _repository.AddAsync(friend1);
     await _repository.AddAsync(friend2);
 
     // Act: friend2の誕生日をfriend1と同じにする
-    friend2.Birthday = "2000-05-05";
+    friend2.BirthDay = 5;
     var result = await _repository.UpdateAsync(friend2);
 
     // Assert: 確認ダイアログが表示されるべき
@@ -1566,11 +1597,18 @@ public async Task UpdateAsync_WhenCreatingDuplicate_ShowsConfirmation()
 public async Task UpdateAsync_WhenNotCreatingDuplicate_NoConfirmation()
 {
     // Arrange
-    var friend = new Friend { Id = 1, Name = "山田太郎", Birthday = "2000-05-05" };
+    var friend = new Friend
+    {
+        Id = 1,
+        Name = "山田太郎",
+        BirthYear = 2000,
+        BirthMonth = 5,
+        BirthDay = 5
+    };
     await _repository.AddAsync(friend);
 
     // Act: 自分自身の誕生日を変更（重複にならない）
-    friend.Birthday = "2000-05-06";
+    friend.BirthDay = 6;
     var result = await _repository.UpdateAsync(friend);
 
     // Assert: 確認ダイアログは表示されない
@@ -1580,16 +1618,21 @@ public async Task UpdateAsync_WhenNotCreatingDuplicate_NoConfirmation()
 
 ### 2. 誕生日入力パターンと通知可否
 
-| パターン | 入力例 | 通知 | 備考 |
-|---------|-------|------|------|
-| 年月日 | 2000-05-15 | ✅ | 毎年5月15日に通知 |
-| 月日のみ | 05-15 | ✅ | 毎年5月15日に通知 |
-| 年のみ | 2000 | ❌ | 通知なし、「2000年生まれ」などの情報を記録可能 |
-| 月のみ | 05 | ❌ | 通知なし、「5月生まれ」などの情報を記録可能 |
-| 日のみ | 15 | ❌ | 通知なし、「15日生まれ」などの情報を記録可能 |
-| 未入力 | (NULL) | ❌ | 通知なし、一覧では最後に表示 |
+| パターン | DB保存例 | 通知 | 備考 |
+|---------|---------|------|------|
+| 年月日 | BirthYear=2000, BirthMonth=5, BirthDay=15 | ✅ | 毎年5月15日に通知 |
+| 月日のみ | BirthYear=NULL, BirthMonth=5, BirthDay=15 | ✅ | 毎年5月15日に通知 |
+| 年のみ | BirthYear=2000, BirthMonth=NULL, BirthDay=NULL | ❌ | 通知なし、「2000年生まれ」を記録可能 |
+| 月のみ | BirthYear=NULL, BirthMonth=5, BirthDay=NULL | ❌ | 通知なし、「5月生まれ」を記録可能 |
+| 日のみ | BirthYear=NULL, BirthMonth=NULL, BirthDay=15 | ❌ | 通知なし、「15日生まれ」を記録可能 |
+| 未入力 | 全てNULL | ❌ | 通知なし、一覧では最後に表示 |
 
-**重要**: 通知が行われるのは「月と日の両方が入力されている場合のみ」
+**重要**: 通知が行われるのは「BirthMonth と BirthDay の両方が入力されている場合のみ」
+
+**解決された問題**:
+- ✅ 「5月生まれ」(BirthMonth=5, BirthDay=NULL) と「5日生まれ」(BirthMonth=NULL, BirthDay=5) が明確に区別できる
+- ✅ データベースレベルで曖昧性が排除された
+- ✅ CHECK制約により不正な値（month=13など）を防止
 
 #### 部分入力機能の背景と必要性
 
@@ -1768,7 +1811,7 @@ dotnet ef database update
 
 **ドキュメント作成日**: 2025-11-14
 **改訂日**: 2025-11-14
-**バージョン**: 2.2（重複チェック強化版）
+**バージョン**: 3.0（DB構造改訂版）
 **作成者**: Claude (Anthropic)
 **プロジェクトオーナー**: えりんぎ (@eringi_vrc)
 **ライセンス**: MIT License
@@ -1783,6 +1826,7 @@ dotnet ef database update
 | 2.0 | 2025-11-14 | 全面改訂（DB正規化、FTS5、DI、セキュリティ、テスト強化） |
 | 2.1 | 2025-11-14 | 部分入力対応（年のみ、月のみ、日のみの登録が可能に） |
 | 2.2 | 2025-11-14 | 重複登録制御の詳細化（新規登録時・更新時の処理を明確化、テストケース追加） |
+| 3.0 | 2025-11-14 | **DB構造改訂**: birthday TEXT → birth_year, birth_month, birth_day INTEGER に分割（曖昧性排除） |
 
 ---
 
