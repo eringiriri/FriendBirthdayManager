@@ -153,6 +153,7 @@ CREATE VIRTUAL TABLE friends_fts USING fts5(
 );
 
 -- トリガーでfriends テーブルと同期
+-- NOTE: memoはNULLable。SQLiteのFTS5はNULL値を空文字列として扱うため問題なし
 CREATE TRIGGER friends_ai AFTER INSERT ON friends BEGIN
     INSERT INTO friends_fts(rowid, name, memo)
     VALUES (new.id, new.name, new.memo);
@@ -288,9 +289,9 @@ public class Migration_001_AddAliasesTable : IDatabaseMigration
   - 入力中にリアルタイムでフィルタリング
 - **並び替え**:
   - 近い順: 今日から誕生日までの日数（昇順）、誕生日未設定は最後
-    - 同日の場合は名前順（日本語50音順、Unicode Collation Algorithm使用）
+    - 同日の場合は名前順（Unicode順でソート、アプリケーション層で実装）
   - 日付順: 1月1日→12月31日（月日のみで判定）、同日は名前順
-  - 名前順: 日本語50音順（あいうえお順）
+  - 名前順: Unicode順（C#のstring.Compare使用）
 - **名前クリック**: 編集画面（画面C）へ遷移
 - **削除**: 編集画面から実行（誤操作防止のため一覧から直接削除不可）
 - **通知アイコン**: 🔔（有効）、🔕（無効）
@@ -514,12 +515,9 @@ public class Migration_001_AddAliasesTable : IDatabaseMigration
 public bool ShouldNotifyToday(Friend friend, DateTime today, int daysBefore)
 {
     if (!friend.NotifyEnabled) return false;
-    if (string.IsNullOrEmpty(friend.Birthday)) return false;
+    if (!friend.BirthMonth.HasValue || !friend.BirthDay.HasValue) return false; // 月日が必要
 
-    var (year, month, day) = ParseBirthday(friend.Birthday);
-    if (!month.HasValue || !day.HasValue) return false; // 月日が必要
-
-    var nextBirthday = CalculateNextBirthday(today, month.Value, day.Value);
+    var nextBirthday = CalculateNextBirthday(today, friend.BirthMonth.Value, friend.BirthDay.Value);
     var daysUntil = (nextBirthday - today).Days;
 
     return daysUntil >= 0 && daysUntil <= daysBefore;
@@ -567,8 +565,9 @@ var friends = await dbContext.Friends
 - メモ（FTS5）
 
 ### パフォーマンス目標
-- 1,000件のデータで検索応答時間 < 100ms
-- 10,000件のデータで検索応答時間 < 500ms
+- 1,000件のデータで検索応答時間 < 50ms
+- 10,000件のデータで検索応答時間 < 200ms
+- 100,000件のデータでも動作可能（検索応答時間 < 1秒）
 
 ---
 
@@ -629,6 +628,8 @@ public partial class App : Application
         services.AddScoped<ISettingsRepository, SettingsRepository>();
 
         // Services
+        // NOTE: NotificationServiceとTrayIconServiceはSingletonだが、
+        // DbContextを使用する場合はIServiceProviderを注入してスコープを作成する
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddScoped<ICsvService, CsvService>();
@@ -692,14 +693,32 @@ public class Friend
     {
         if (!HasValidBirthdayForNotification()) return null;
 
-        var nextBirthday = new DateTime(
-            referenceDate.Year,
-            BirthMonth!.Value,
-            BirthDay!.Value
-        );
+        int year = referenceDate.Year;
+        int month = BirthMonth!.Value;
+        int day = BirthDay!.Value;
+
+        // うるう年処理: 2月29日生まれで平年の場合は2月28日にフォールバック
+        if (month == 2 && day == 29 && !DateTime.IsLeapYear(year))
+        {
+            day = 28;
+        }
+
+        var nextBirthday = new DateTime(year, month, day);
 
         if (nextBirthday < referenceDate)
-            nextBirthday = nextBirthday.AddYears(1);
+        {
+            // 来年の誕生日を計算（うるう年処理を再適用）
+            year++;
+            if (month == 2 && BirthDay == 29 && !DateTime.IsLeapYear(year))
+            {
+                day = 28;
+            }
+            else
+            {
+                day = BirthDay!.Value;
+            }
+            nextBirthday = new DateTime(year, month, day);
+        }
 
         return (nextBirthday - referenceDate).Days;
     }
@@ -725,7 +744,7 @@ public class Alias
 {
     public int Id { get; set; }
     public int FriendId { get; set; }
-    public required string AliasText { get; set; }
+    public required string Alias { get; set; }
     public DateTime CreatedAt { get; set; }
 
     // Navigation property
@@ -776,6 +795,29 @@ public interface INotificationService
     Task<bool> ShowNotificationAsync(Friend friend, int daysUntil);
 }
 
+// 実装例: SingletonサービスでScopedなDbContextを使用する方法
+public class NotificationService : INotificationService
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<NotificationService> _logger;
+
+    public NotificationService(IServiceProvider serviceProvider, ILogger<NotificationService> logger)
+    {
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+    }
+
+    public async Task CheckAndNotifyAsync(CancellationToken cancellationToken = default)
+    {
+        // スコープを作成してDbContextを取得
+        using var scope = _serviceProvider.CreateScope();
+        var friendRepository = scope.ServiceProvider.GetRequiredService<IFriendRepository>();
+
+        var friends = await friendRepository.GetAllAsync();
+        // 通知処理...
+    }
+}
+
 public interface ITrayIconService
 {
     void Initialize();
@@ -820,7 +862,7 @@ public async Task<ImportResult> ImportAsync(string filePath)
         throw new InvalidOperationException("データ件数が多すぎます（10万件以下）");
 
     // 各フィールドの長さ検証
-    // Excel数式インジェクション対策（=, +, -, @で始まるセルを拒否）
+    // Excel数式インジェクション対策（=, +, -, @で始まるセルに'を付加して無害化）
 }
 ```
 
@@ -848,9 +890,9 @@ public async Task<ImportResult> ImportAsync(string filePath)
 - 友人リストは変更時に無効化
 
 ### 5. パフォーマンステスト計画
-- 100人、1,000人、10,000人のデータセットでベンチマーク
+- 100件、1,000件、10,000件、100,000件のデータセットでベンチマーク
 - 起動時間 < 3秒
-- 検索応答時間 < 500ms（10,000件）
+- 検索応答時間: 1,000件 < 50ms、10,000件 < 200ms、100,000件 < 1秒
 
 ---
 
@@ -953,11 +995,12 @@ public class DatabaseIntegrationTests : IDisposable
         var friend = new Friend
         {
             Name = "Test User",
-            Birthday = "05-15",
+            BirthMonth = 5,
+            BirthDay = 15,
             Aliases = new List<Alias>
             {
-                new() { AliasText = "test1" },
-                new() { AliasText = "test2" }
+                new() { Alias = "test1" },
+                new() { Alias = "test2" }
             }
         };
 
@@ -1037,10 +1080,10 @@ name,birth_year,birth_month,birth_day,aliases,memo,notify_days_before,notify_ena
 - **バリデーション**:
   - 必須カラム: `name`
   - 各フィールドの最大長チェック
-  - 誕生日形式検証（ISO 8601）
+  - 誕生日検証: birth_year (1900-2100), birth_month (1-12), birth_day (1-31)
 
 ### エクスポート時の注意
-- Excel数式インジェクション対策: `=`, `+`, `-`, `@` で始まるセルの先頭に `'`（シングルクォート）を付加
+- Excel数式インジェクション対策: `=`, `+`, `-`, `@` で始まるセルの先頭に `'`（シングルクォート）を付加して無害化
 
 ### インポート時の検証
 
@@ -1049,23 +1092,52 @@ public class CsvValidator
 {
     public ValidationResult Validate(string[] row, int lineNumber)
     {
-        // 必須チェック
+        // 必須チェック: name（row[0]）
         if (string.IsNullOrWhiteSpace(row[0]))
             return ValidationResult.Error($"Line {lineNumber}: Name is required");
 
         // 長さチェック
         if (row[0].Length > 200)
-            return ValidationResult.Error($"Line {lineNumber}: Name too long");
+            return ValidationResult.Error($"Line {lineNumber}: Name too long (max 200 chars)");
 
-        // 誕生日形式チェック
+        // birth_year（row[1]）検証
         if (!string.IsNullOrEmpty(row[1]))
         {
-            if (!IsValidBirthdayFormat(row[1]))
-                return ValidationResult.Error($"Line {lineNumber}: Invalid birthday format");
+            if (!int.TryParse(row[1], out int year) || year < 1900 || year > 2100)
+                return ValidationResult.Error($"Line {lineNumber}: Invalid birth_year (1900-2100)");
+        }
+
+        // birth_month（row[2]）検証
+        if (!string.IsNullOrEmpty(row[2]))
+        {
+            if (!int.TryParse(row[2], out int month) || month < 1 || month > 12)
+                return ValidationResult.Error($"Line {lineNumber}: Invalid birth_month (1-12)");
+        }
+
+        // birth_day（row[3]）検証
+        if (!string.IsNullOrEmpty(row[3]))
+        {
+            if (!int.TryParse(row[3], out int day) || day < 1 || day > 31)
+                return ValidationResult.Error($"Line {lineNumber}: Invalid birth_day (1-31)");
         }
 
         return ValidationResult.Success();
     }
+}
+
+public class ValidationResult
+{
+    public bool IsSuccess { get; }
+    public string ErrorMessage { get; }
+
+    private ValidationResult(bool isSuccess, string errorMessage = "")
+    {
+        IsSuccess = isSuccess;
+        ErrorMessage = errorMessage;
+    }
+
+    public static ValidationResult Success() => new ValidationResult(true);
+    public static ValidationResult Error(string message) => new ValidationResult(false, message);
 }
 ```
 
@@ -1249,7 +1321,7 @@ FriendBirthdayManager/
 - [ ] エイリアス検索実装
 - [ ] 即時検索（リアルタイムフィルター）
 - [ ] 並び替え（近い順、日付順、名前順）
-- [ ] 日本語50音順ソート
+- [ ] Unicode順ソート（アプリケーション層で実装）
 
 **依存関係**: Phase 3完了
 **マイルストーン**: 検索が高速（1,000件で<100ms）
@@ -1287,12 +1359,12 @@ FriendBirthdayManager/
 - [ ] 単体テストカバレッジ80%達成
 - [ ] 統合テスト
 - [ ] 手動UIテスト（全機能）
-- [ ] パフォーマンステスト（100/1,000/10,000件）
+- [ ] パフォーマンステスト（100/1,000/10,000/100,000件）
 - [ ] エッジケーステスト（うるう年、重複、etc.）
 - [ ] セキュリティテスト（CSV悪意ファイル）
 
 **依存関係**: Phase 1-8完了
-**マイルストーン**: バグ0件、パフォーマンス目標達成
+**マイルストーン**: バグ0件、パフォーマンス目標達成（10,000件 < 200ms、100,000件 < 1秒）
 
 ---
 
@@ -1711,12 +1783,13 @@ public async Task UpdateAsync_WhenNotCreatingDuplicate_NoConfirmation()
 ### 5. CSV フォーマット（RFC 4180準拠）
 
 ```csv
-name,birthday,aliases,memo,notify_days_before,notify_enabled,notify_sound_enabled
-山田太郎,2000-05-15,"tarou,taro,たろー",高校時代の友人,3,1,1
-佐藤花子,05-25,"hanako,はなこ","大学の先輩
+name,birth_year,birth_month,birth_day,aliases,memo,notify_days_before,notify_enabled,notify_sound_enabled
+山田太郎,2000,5,15,"tarou,taro,たろー",高校時代の友人,3,1,1
+佐藤花子,,5,25,"hanako,はなこ","大学の先輩
 2行目も可能",,1,
-鈴木一郎,2000,ichiro,2000年生まれ,,,1
-田中次郎,,,,,,0
+鈴木一郎,2000,,,ichiro,2000年生まれ,,,1
+田中花子,,5,,hanako,5月生まれ（日不明）,,,1
+田中次郎,,,,,,,0,
 ```
 
 - **エンコーディング**: UTF-8 BOM付き
@@ -1796,12 +1869,13 @@ dotnet ef database update
 - ✅ タスクトレイに常駐し、ユーザーが意識せずに使える
 - ✅ 友人の誕生日を忘れない仕組み
 - ✅ シンプルで直感的なUI
-- ✅ 軽量で高速動作（起動3秒以内、検索500ms以内）
+- ✅ 軽量で高速動作（起動3秒以内、10,000件で検索 < 200ms）
 - ✅ テストカバレッジ80%以上
 - ✅ セキュアで安全（SQLインジェクション対策、CSV検証）
 
 ### 成功指標
-- [x] 10,000人の友人を登録してもスムーズに動作（検索<500ms）
+- [x] 10,000件の友人を登録してもスムーズに動作（検索 < 200ms）
+- [x] 100,000件のデータでも動作可能（検索 < 1秒）
 - [x] 通知が確実に届く（失敗時はリトライ＆ログ記録）
 - [x] エイリアス検索が高速（FTS5使用）
 - [x] データのバックアップ・復元が簡単（CSV I/O）
