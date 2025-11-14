@@ -242,17 +242,9 @@ public class TrayIconService : ITrayIconService, IDisposable
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var aboutMessage = @"Friend Birthday Manager
-Version 1.0.0
-
-制作者: えりんぎ
-Twitter: @eringi_vrc
-連絡先: eringi@eringi.me
-
-ライセンス: MIT License";
-
-                MessageBox.Show(aboutMessage, "Friend Birthday Manager について",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                var aboutWindow = _serviceProvider.GetRequiredService<Views.AboutWindow>();
+                aboutWindow.Show();
+                aboutWindow.Activate();
             });
         }
         catch (Exception ex)

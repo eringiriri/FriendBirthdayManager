@@ -116,13 +116,52 @@ public partial class EditViewModel : ObservableObject
     {
         try
         {
+            if (_friendId == null)
+            {
+                _logger.LogWarning("Cannot delete: FriendId is null");
+                return;
+            }
+
             _logger.LogInformation("Deleting friend: {FriendId}", _friendId);
-            // TODO: 削除の実装（Phase 3で実装）
-            await Task.CompletedTask;
+
+            // 削除確認ダイアログ
+            var result = System.Windows.MessageBox.Show(
+                $"「{Name}」を削除してもよろしいですか？\n\nこの操作は元に戻せません。",
+                "削除の確認",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning,
+                System.Windows.MessageBoxResult.No);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+            {
+                _logger.LogInformation("Delete operation cancelled by user");
+                return;
+            }
+
+            // 削除実行
+            await _friendRepository.DeleteAsync(_friendId.Value);
+
+            _logger.LogInformation("Friend deleted successfully: {FriendId}", _friendId);
+            StatusMessage = "削除しました";
+
+            // ウィンドウを閉じる
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                var window = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(w => w.DataContext == this);
+                window?.Close();
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete friend: {FriendId}", _friendId);
+            StatusMessage = "エラー: 削除に失敗しました";
+            System.Windows.MessageBox.Show(
+                $"削除に失敗しました:\n{ex.Message}",
+                "エラー",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
         }
     }
 }

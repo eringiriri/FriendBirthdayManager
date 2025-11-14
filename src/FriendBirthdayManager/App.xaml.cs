@@ -149,12 +149,14 @@ public partial class App : Application
         services.AddTransient<ListViewModel>();
         services.AddTransient<EditViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<AboutViewModel>();
 
         // Views
         services.AddTransient<Views.MainWindow>();
         services.AddTransient<Views.ListWindow>();
         services.AddTransient<Views.EditWindow>();
         services.AddTransient<Views.SettingsWindow>();
+        services.AddTransient<Views.AboutWindow>();
 
         // Logging
         services.AddLogging(builder =>
