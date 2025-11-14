@@ -40,16 +40,16 @@ public partial class App : Application
             Log.Information("Application starting...");
 
             // データベースの初期化
-            // Task.Run()を使用してデッドロックを防止
-            Task.Run(async () => await InitializeDatabaseAsync()).GetAwaiter().GetResult();
+            // ConfigureAwait(false)を使用してデッドロックを防止
+            InitializeDatabaseAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
             // タスクトレイアイコンを初期化
             _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
             _trayIconService.Initialize();
 
             // アイコンを更新（直近の誕生日を取得）
-            // Task.Run()を使用してデッドロックを防止
-            Task.Run(async () => await UpdateTrayIconAsync()).GetAwaiter().GetResult();
+            // ConfigureAwait(false)を使用してデッドロックを防止
+            UpdateTrayIconAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
             // 通知サービスを開始
             _notificationService = _serviceProvider.GetRequiredService<INotificationService>();

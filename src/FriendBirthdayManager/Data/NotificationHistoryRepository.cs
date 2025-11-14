@@ -56,7 +56,7 @@ public class NotificationHistoryRepository : INotificationHistoryRepository
         {
             _logger.LogError(ex, "Failed to check notification history: FriendId={FriendId}, Date={Date}",
                 friendId, notificationDate);
-            return false;
+            throw;
         }
     }
 

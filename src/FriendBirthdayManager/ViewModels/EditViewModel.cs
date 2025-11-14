@@ -215,9 +215,10 @@ public partial class EditViewModel : ObservableObject
             friend.NotifySoundEnabled = NotifySoundEnabled;
 
             // NotifyDaysBeforeIndexをNotifyDaysBefore（日数）に変換
-            // 0=デフォルト, 1=無効, 2以降は具体的な日数
+            // 0=デフォルト, 1=通知無効, 2以降は具体的な日数
             if (NotifyDaysBeforeIndex == 1)
             {
+                friend.NotifyEnabled = false;
                 friend.NotifyDaysBefore = null; // デフォルト使用
             }
             else if (NotifyDaysBeforeIndex > 1)
@@ -231,13 +232,15 @@ public partial class EditViewModel : ObservableObject
             }
 
             // エイリアスを更新
+            // EF Coreのトラッキング機能により、既存のエイリアスは自動的に削除される
             friend.Aliases.Clear();
             foreach (var aliasItem in Aliases.Where(a => !string.IsNullOrWhiteSpace(a.Value)))
             {
                 friend.Aliases.Add(new Alias
                 {
                     AliasName = aliasItem.Value.Trim(),
-                    FriendId = friend.Id
+                    FriendId = friend.Id,
+                    CreatedAt = DateTime.UtcNow
                 });
             }
 
