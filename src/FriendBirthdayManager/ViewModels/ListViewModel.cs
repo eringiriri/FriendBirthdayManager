@@ -43,7 +43,17 @@ public partial class ListViewModel : ObservableObject
     partial void OnSearchKeywordChanged(string value)
     {
         // 即時検索: 検索キーワードが変更されたら自動的に検索を実行
-        _ = LoadFriendsAsync();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await LoadFriendsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load friends on search keyword change");
+            }
+        });
     }
 
     partial void OnSortIndexChanged(int value)
@@ -163,7 +173,20 @@ public partial class ListViewModel : ObservableObject
         {
             _logger.LogInformation("Edit friend: {FriendId}", friend.Id);
             var editWindow = _serviceProvider.GetRequiredService<Views.EditWindow>();
-            _ = editWindow.LoadFriendAsync(friend.Id);
+
+            // ウィンドウ表示前にデータをロード（例外をキャッチ）
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await editWindow.LoadFriendAsync(friend.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load friend data for editing: {FriendId}", friend.Id);
+                }
+            });
+
             editWindow.Show();
             editWindow.Activate();
         }

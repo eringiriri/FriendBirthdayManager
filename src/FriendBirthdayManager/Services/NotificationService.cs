@@ -33,8 +33,18 @@ public class NotificationService : INotificationService, IDisposable
         {
             _logger.LogInformation("Starting notification service...");
 
-            // 初回チェックを実行
-            _ = CheckAndNotifyAsync();
+            // 初回チェックを実行（例外をキャッチして無視）
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await CheckAndNotifyAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to check and notify on startup");
+                }
+            });
 
             // タイマーを設定（1時間ごとにチェック）
             _notificationTimer = new Timer(TimeSpan.FromHours(1).TotalMilliseconds);
