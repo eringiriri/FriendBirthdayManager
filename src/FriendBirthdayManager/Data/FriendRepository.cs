@@ -117,9 +117,11 @@ public class FriendRepository : IFriendRepository
             }
 
             // FTS5でname, memoを検索
+            // FTS5の特殊文字をエスケープし、フレーズ検索として安全に実行
+            var escapedKeyword = EscapeFts5Keyword(keyword);
             var ftsQuery = $@"
                 SELECT id FROM friends_fts
-                WHERE friends_fts MATCH '{keyword.Replace("'", "''")}'";
+                WHERE friends_fts MATCH ""{escapedKeyword}""";
 
             var friendIdsFromFts = await _context.Database
                 .SqlQueryRaw<int>(ftsQuery)
@@ -211,5 +213,15 @@ public class FriendRepository : IFriendRepository
             _logger.LogError(ex, "Failed to get notification targets");
             throw;
         }
+    }
+
+    /// <summary>
+    /// FTS5検索用のキーワードをエスケープ
+    /// SQLインジェクション対策として、ダブルクォートをエスケープし、フレーズ検索として扱う
+    /// </summary>
+    private static string EscapeFts5Keyword(string keyword)
+    {
+        // ダブルクォートをエスケープ（""にする）
+        return keyword.Replace("\"", "\"\"");
     }
 }

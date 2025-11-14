@@ -14,7 +14,7 @@ public partial class EditViewModel : ObservableObject
 {
     private readonly IFriendRepository _friendRepository;
     private readonly ILogger<EditViewModel> _logger;
-    private int _friendId;
+    private int? _friendId;
 
     [ObservableProperty]
     private string _name = string.Empty;
@@ -42,6 +42,9 @@ public partial class EditViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<AliasItem> _aliases = new();
+
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
 
     public EditViewModel(IFriendRepository friendRepository, ILogger<EditViewModel> logger)
     {
@@ -101,13 +104,145 @@ public partial class EditViewModel : ObservableObject
     {
         try
         {
-            _logger.LogInformation("Saving friend: {FriendId}", _friendId);
-            // TODO: 編集の保存実装（Phase 3で実装）
-            await Task.CompletedTask;
+            if (_friendId == null)
+            {
+                _logger.LogWarning("Cannot save: FriendId is null");
+                return;
+            }
+
+            _logger.LogInformation("Saving friend: {FriendId}", _friendId.Value);
+
+            // バリデーション
+            if (string.IsNullOrWhiteSpace(Name))
+            {
+                StatusMessage = "エラー: 名前を入力してください";
+                _logger.LogWarning("Validation failed: Name is required");
+                System.Windows.MessageBox.Show(
+                    "名前を入力してください。",
+                    "入力エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
+            // 誕生日のパース
+            int? birthYear = null;
+            int? birthMonth = null;
+            int? birthDay = null;
+
+            if (!string.IsNullOrWhiteSpace(BirthYear))
+            {
+                if (!int.TryParse(BirthYear, out var year) || year < 1900 || year > 2100)
+                {
+                    StatusMessage = "エラー: 誕生年が無効です（1900-2100）";
+                    _logger.LogWarning("Validation failed: Invalid birth year: {BirthYear}", BirthYear);
+                    System.Windows.MessageBox.Show(
+                        "誕生年は1900～2100の範囲で入力してください。",
+                        "入力エラー",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+                birthYear = year;
+            }
+
+            if (!string.IsNullOrWhiteSpace(BirthMonth))
+            {
+                if (!int.TryParse(BirthMonth, out var month) || month < 1 || month > 12)
+                {
+                    StatusMessage = "エラー: 誕生月が無効です（1-12）";
+                    _logger.LogWarning("Validation failed: Invalid birth month: {BirthMonth}", BirthMonth);
+                    System.Windows.MessageBox.Show(
+                        "誕生月は1～12の範囲で入力してください。",
+                        "入力エラー",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+                birthMonth = month;
+            }
+
+            if (!string.IsNullOrWhiteSpace(BirthDay))
+            {
+                if (!int.TryParse(BirthDay, out var day) || day < 1 || day > 31)
+                {
+                    StatusMessage = "エラー: 誕生日が無効です（1-31）";
+                    _logger.LogWarning("Validation failed: Invalid birth day: {BirthDay}", BirthDay);
+                    System.Windows.MessageBox.Show(
+                        "誕生日は1～31の範囲で入力してください。",
+                        "入力エラー",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+                birthDay = day;
+            }
+
+            // 既存の友人情報を取得
+            var friend = await _friendRepository.GetByIdAsync(_friendId.Value);
+            if (friend == null)
+            {
+                StatusMessage = "エラー: 友人情報が見つかりません";
+                _logger.LogError("Friend not found for saving: {FriendId}", _friendId);
+                System.Windows.MessageBox.Show(
+                    "友人情報が見つかりませんでした。",
+                    "エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+                return;
+            }
+
+            // 友人情報を更新
+            friend.Name = Name.Trim();
+            friend.BirthYear = birthYear;
+            friend.BirthMonth = birthMonth;
+            friend.BirthDay = birthDay;
+            friend.Memo = string.IsNullOrWhiteSpace(Memo) ? null : Memo.Trim();
+            friend.NotifyEnabled = NotifyEnabled;
+            friend.NotifySound = NotifySoundEnabled;
+            friend.NotifyDaysBefore = NotifyDaysBeforeIndex; // 0=当日, 1=1日前, etc.
+
+            // エイリアスを更新
+            friend.Aliases.Clear();
+            foreach (var aliasItem in Aliases.Where(a => !string.IsNullOrWhiteSpace(a.Value)))
+            {
+                friend.Aliases.Add(new Alias
+                {
+                    AliasName = aliasItem.Value.Trim(),
+                    FriendId = friend.Id
+                });
+            }
+
+            // 保存
+            await _friendRepository.UpdateAsync(friend);
+
+            StatusMessage = "保存しました";
+            _logger.LogInformation("Friend saved successfully: {FriendName} (ID: {FriendId})", friend.Name, friend.Id);
+
+            System.Windows.MessageBox.Show(
+                "保存しました。",
+                "保存完了",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+
+            // ウィンドウを閉じる
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                var window = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(w => w.DataContext == this);
+                window?.Close();
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save friend: {FriendId}", _friendId);
+            StatusMessage = "エラー: 保存に失敗しました";
+            System.Windows.MessageBox.Show(
+                $"保存に失敗しました:\n{ex.Message}",
+                "エラー",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
         }
     }
 
