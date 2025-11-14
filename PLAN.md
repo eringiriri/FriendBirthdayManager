@@ -1463,9 +1463,120 @@ _logger.LogError(ex, "Database operation failed");
 ## ⚠️ 注意事項・制約（改訂版）
 
 ### 1. 重複登録制御
+
+**基本方針**:
 - データベース制約ではなく、**アプリケーションロジックで制御**
-- 同名同誕生日の場合、ユーザーに確認ダイアログ表示
-- メモで区別することを推奨するが、強制はしない
+- 同名同誕生日の友人が既に存在する場合、確認ダイアログを表示
+- ユーザーが許可すれば重複登録可能（メモやエイリアスで区別することを推奨）
+
+#### 新規登録時の重複チェック
+
+```csharp
+public async Task<bool> AddAsync(Friend friend)
+{
+    // 同名同誕生日のレコードを検索
+    var duplicate = await _context.Friends
+        .Where(f => f.Name == friend.Name
+                 && f.Birthday == friend.Birthday)
+        .FirstOrDefaultAsync();
+
+    if (duplicate != null)
+    {
+        // 確認ダイアログ: 「山田太郎（2000-05-15）が既に登録されています。それでも登録しますか？」
+        var result = await ShowConfirmationDialog(
+            $"{friend.Name}（{friend.Birthday}）が既に登録されています。\n" +
+            "同名同誕生日の別人として登録する場合は、メモやエイリアスで区別してください。\n" +
+            "登録しますか？"
+        );
+
+        if (!result) return false;  // ユーザーがキャンセル
+    }
+
+    // 登録処理
+    _context.Friends.Add(friend);
+    await _context.SaveChangesAsync();
+    return true;
+}
+```
+
+#### 更新時の重複チェック
+
+**重要**: 更新時は**自分自身（同じID）を除外**してチェックする必要があります。
+
+**問題となるケース**:
+```
+初期状態:
+  ID=1: 山田太郎, 2000-05-05
+  ID=2: 山田太郎, 2000-05-04
+
+ID=2を編集して「2000-05-05」に変更した場合:
+  → ID=1と同名同誕生日になってしまう
+```
+
+**実装例**:
+```csharp
+public async Task<bool> UpdateAsync(Friend friend)
+{
+    // 自分自身を除外して同名同誕生日のレコードを検索
+    var duplicate = await _context.Friends
+        .Where(f => f.Id != friend.Id)  // 👈 自分自身を除外
+        .Where(f => f.Name == friend.Name
+                 && f.Birthday == friend.Birthday)
+        .FirstOrDefaultAsync();
+
+    if (duplicate != null)
+    {
+        // 確認ダイアログ
+        var result = await ShowConfirmationDialog(
+            $"{friend.Name}（{friend.Birthday}）が既に登録されています（ID={duplicate.Id}）。\n" +
+            "同名同誕生日になりますが、更新しますか？"
+        );
+
+        if (!result) return false;  // ユーザーがキャンセル
+    }
+
+    // 更新処理
+    _context.Friends.Update(friend);
+    await _context.SaveChangesAsync();
+    return true;
+}
+```
+
+#### テストケース
+
+```csharp
+[Fact]
+public async Task UpdateAsync_WhenCreatingDuplicate_ShowsConfirmation()
+{
+    // Arrange
+    var friend1 = new Friend { Id = 1, Name = "山田太郎", Birthday = "2000-05-05" };
+    var friend2 = new Friend { Id = 2, Name = "山田太郎", Birthday = "2000-05-04" };
+    await _repository.AddAsync(friend1);
+    await _repository.AddAsync(friend2);
+
+    // Act: friend2の誕生日をfriend1と同じにする
+    friend2.Birthday = "2000-05-05";
+    var result = await _repository.UpdateAsync(friend2);
+
+    // Assert: 確認ダイアログが表示されるべき
+    _mockDialog.Verify(x => x.ShowConfirmationDialog(It.IsAny<string>()), Times.Once);
+}
+
+[Fact]
+public async Task UpdateAsync_WhenNotCreatingDuplicate_NoConfirmation()
+{
+    // Arrange
+    var friend = new Friend { Id = 1, Name = "山田太郎", Birthday = "2000-05-05" };
+    await _repository.AddAsync(friend);
+
+    // Act: 自分自身の誕生日を変更（重複にならない）
+    friend.Birthday = "2000-05-06";
+    var result = await _repository.UpdateAsync(friend);
+
+    // Assert: 確認ダイアログは表示されない
+    _mockDialog.Verify(x => x.ShowConfirmationDialog(It.IsAny<string>()), Times.Never);
+}
+```
 
 ### 2. 誕生日入力パターンと通知可否
 
@@ -1657,7 +1768,7 @@ dotnet ef database update
 
 **ドキュメント作成日**: 2025-11-14
 **改訂日**: 2025-11-14
-**バージョン**: 2.1（部分入力対応版）
+**バージョン**: 2.2（重複チェック強化版）
 **作成者**: Claude (Anthropic)
 **プロジェクトオーナー**: えりんぎ (@eringi_vrc)
 **ライセンス**: MIT License
@@ -1671,6 +1782,7 @@ dotnet ef database update
 | 1.0 | 2025-11-14 | 初版作成 |
 | 2.0 | 2025-11-14 | 全面改訂（DB正規化、FTS5、DI、セキュリティ、テスト強化） |
 | 2.1 | 2025-11-14 | 部分入力対応（年のみ、月のみ、日のみの登録が可能に） |
+| 2.2 | 2025-11-14 | 重複登録制御の詳細化（新規登録時・更新時の処理を明確化、テストケース追加） |
 
 ---
 
