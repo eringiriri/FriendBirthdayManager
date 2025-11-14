@@ -119,12 +119,41 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             _logger.LogInformation("Exporting CSV...");
-            // TODO: CSV エクスポート（Phase 7で実装）
-            await Task.CompletedTask;
+            StatusMessage = "CSV エクスポート中...";
+
+            // SaveFileDialogを使用してファイル保存先を選択
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "CSV エクスポート",
+                Filter = "CSVファイル (*.csv)|*.csv",
+                FileName = $"friends_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                DefaultExt = "csv",
+                AddExtension = true
+            };
+
+            var result = saveFileDialog.ShowDialog();
+            if (result != true)
+            {
+                StatusMessage = "CSV エクスポートがキャンセルされました";
+                return;
+            }
+
+            var success = await _csvService.ExportAsync(saveFileDialog.FileName);
+
+            if (success)
+            {
+                StatusMessage = $"CSV エクスポート完了: {saveFileDialog.FileName}";
+                _logger.LogInformation("CSV exported successfully to {FilePath}", saveFileDialog.FileName);
+            }
+            else
+            {
+                StatusMessage = "エラー: CSV エクスポートに失敗しました";
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to export CSV");
+            StatusMessage = "エラー: CSV エクスポートに失敗しました";
         }
     }
 
@@ -134,12 +163,64 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             _logger.LogInformation("Importing CSV...");
-            // TODO: CSV インポート（Phase 7で実装）
-            await Task.CompletedTask;
+            StatusMessage = "CSV インポート中...";
+
+            // OpenFileDialogを使用してファイルを選択
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "CSV インポート",
+                Filter = "CSVファイル (*.csv)|*.csv|すべてのファイル (*.*)|*.*",
+                DefaultExt = "csv"
+            };
+
+            var result = openFileDialog.ShowDialog();
+            if (result != true)
+            {
+                StatusMessage = "CSV インポートがキャンセルされました";
+                return;
+            }
+
+            var importResult = await _csvService.ImportAsync(openFileDialog.FileName);
+
+            if (importResult.Errors.Count > 0)
+            {
+                var errorMessage = string.Join("\n", importResult.Errors.Take(10)); // 最初の10件のエラーのみ表示
+                if (importResult.Errors.Count > 10)
+                {
+                    errorMessage += $"\n...他 {importResult.Errors.Count - 10} 件のエラー";
+                }
+
+                _logger.LogWarning("CSV import completed with errors: {ErrorCount}", importResult.Errors.Count);
+                StatusMessage = $"CSV インポート完了（成功: {importResult.SuccessCount}件、失敗: {importResult.FailureCount}件）";
+
+                // エラーメッセージをダイアログで表示
+                System.Windows.MessageBox.Show(
+                    $"インポート結果:\n\n成功: {importResult.SuccessCount}件\n失敗: {importResult.FailureCount}件\n\nエラー詳細:\n{errorMessage}",
+                    "CSV インポート結果",
+                    System.Windows.MessageBoxButton.OK,
+                    importResult.FailureCount > 0 ? System.Windows.MessageBoxImage.Warning : System.Windows.MessageBoxImage.Information);
+            }
+            else
+            {
+                StatusMessage = $"CSV インポート完了: {importResult.SuccessCount}件";
+                _logger.LogInformation("CSV imported successfully: {Count} records", importResult.SuccessCount);
+
+                System.Windows.MessageBox.Show(
+                    $"{importResult.SuccessCount}件のデータをインポートしました。",
+                    "CSV インポート完了",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to import CSV");
+            StatusMessage = "エラー: CSV インポートに失敗しました";
+            System.Windows.MessageBox.Show(
+                $"CSV インポートに失敗しました:\n{ex.Message}",
+                "エラー",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
         }
     }
 
@@ -149,12 +230,59 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             _logger.LogInformation("Backing up database...");
-            // TODO: データベースバックアップ（Phase 7で実装）
-            await Task.CompletedTask;
+            StatusMessage = "データベースバックアップ中...";
+
+            // データベースファイルのパスを取得
+            var dbPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "FriendBirthdayManager",
+                "friends.db");
+
+            if (!System.IO.File.Exists(dbPath))
+            {
+                StatusMessage = "エラー: データベースファイルが見つかりません";
+                _logger.LogWarning("Database file not found: {DbPath}", dbPath);
+                return;
+            }
+
+            // SaveFileDialogを使用してバックアップ先を選択
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "データベースバックアップ",
+                Filter = "データベースファイル (*.db)|*.db|すべてのファイル (*.*)|*.*",
+                FileName = $"friends_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db",
+                DefaultExt = "db",
+                AddExtension = true
+            };
+
+            var result = saveFileDialog.ShowDialog();
+            if (result != true)
+            {
+                StatusMessage = "バックアップがキャンセルされました";
+                return;
+            }
+
+            // データベースファイルをコピー
+            await Task.Run(() => System.IO.File.Copy(dbPath, saveFileDialog.FileName, true));
+
+            StatusMessage = $"バックアップ完了: {saveFileDialog.FileName}";
+            _logger.LogInformation("Database backed up to {FilePath}", saveFileDialog.FileName);
+
+            System.Windows.MessageBox.Show(
+                $"データベースをバックアップしました:\n{saveFileDialog.FileName}",
+                "バックアップ完了",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to backup database");
+            StatusMessage = "エラー: バックアップに失敗しました";
+            System.Windows.MessageBox.Show(
+                $"バックアップに失敗しました:\n{ex.Message}",
+                "エラー",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
         }
     }
 }

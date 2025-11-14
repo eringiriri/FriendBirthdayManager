@@ -11,10 +11,6 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanMinimize">
 
-    <Window.DataContext>
-        <vm:SettingsViewModel/>
-    </Window.DataContext>
-
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -34,16 +30,17 @@
                     </StackPanel>
 
                     <TextBlock Text="デフォルト通知タイミング:" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <ComboBox SelectedIndex="{Binding DefaultNotifyDaysBefore}" Width="200" HorizontalAlignment="Left" Margin="0,0,0,20">
-                        <ComboBoxItem Content="当日のみ"/>
-                        <ComboBoxItem Content="1日前から"/>
-                        <ComboBoxItem Content="2日前から"/>
-                        <ComboBoxItem Content="3日前から"/>
-                        <ComboBoxItem Content="5日前から"/>
-                        <ComboBoxItem Content="7日前から"/>
-                        <ComboBoxItem Content="14日前から"/>
-                        <ComboBoxItem Content="30日前から"/>
-                    </ComboBox>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <TextBox Text="{Binding DefaultNotifyDaysBefore, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="60"
+                                 VerticalContentAlignment="Center"/>
+                        <TextBlock Text=" 日前から" Margin="5,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="（1-30）"
+                                   FontSize="11"
+                                   Foreground="Gray"
+                                   Margin="5,0"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
 
                     <CheckBox Content="デフォルトで音を鳴らす" IsChecked="{Binding DefaultNotifySound}"/>
                 </StackPanel>
@@ -96,7 +93,11 @@
             <TabItem Header="詳細">
                 <StackPanel Margin="15">
                     <TextBlock Text="言語:" FontWeight="Bold" Margin="0,0,0,10"/>
-                    <ComboBox SelectedValue="{Binding Language}" Width="200" HorizontalAlignment="Left" Margin="0,0,0,20">
+                    <ComboBox SelectedValue="{Binding Language}"
+                              SelectedValuePath="Tag"
+                              Width="200"
+                              HorizontalAlignment="Left"
+                              Margin="0,0,0,20">
                         <ComboBoxItem Content="日本語" Tag="ja-JP"/>
                         <ComboBoxItem Content="English" Tag="en-US"/>
                     </ComboBox>
