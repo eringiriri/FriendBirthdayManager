@@ -281,6 +281,5 @@ public class TrayIconService : ITrayIconService, IDisposable
         });
 
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 }

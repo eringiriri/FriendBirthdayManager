@@ -116,12 +116,7 @@ public class FriendRepository : IFriendRepository
                 return await GetAllAsync();
             }
 
-            // FTS5でname, memoを検索
-            // パラメータ化クエリを使用してSQLインジェクションを防止
-            var escapedKeyword = EscapeFts5Keyword(keyword);
-
-            // FromSqlRawではパラメータ化できないため、代替アプローチを使用
-            // FTS5検索をスキップして、LINQで部分一致検索を実行
+            // LINQで部分一致検索を実行（パラメータ化クエリにより安全）
             var friendIdsFromNameOrMemo = await _context.Friends
                 .Where(f => f.Name.Contains(keyword) || (f.Memo != null && f.Memo.Contains(keyword)))
                 .Select(f => f.Id)
@@ -215,13 +210,4 @@ public class FriendRepository : IFriendRepository
         }
     }
 
-    /// <summary>
-    /// FTS5検索用のキーワードをエスケープ
-    /// SQLインジェクション対策として、ダブルクォートをエスケープし、フレーズ検索として扱う
-    /// </summary>
-    private static string EscapeFts5Keyword(string keyword)
-    {
-        // ダブルクォートをエスケープ（""にする）
-        return keyword.Replace("\"", "\"\"");
-    }
 }

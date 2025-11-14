@@ -48,7 +48,7 @@ public class NotificationService : INotificationService, IDisposable
 
             // タイマーを設定（1時間ごとにチェック）
             _notificationTimer = new Timer(TimeSpan.FromHours(1).TotalMilliseconds);
-            _notificationTimer.Elapsed += async (s, e) => await CheckAndNotifyAsync();
+            _notificationTimer.Elapsed += OnTimerElapsed;
             _notificationTimer.AutoReset = true;
             _notificationTimer.Start();
 
@@ -207,12 +207,32 @@ public class NotificationService : INotificationService, IDisposable
         }
     }
 
+    /// <summary>
+    /// タイマーイベントハンドラー
+    /// async voidを避け、例外を適切にハンドリング
+    /// </summary>
+    private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
+    {
+        // Fire and forgetパターンで非同期処理を実行
+        // 例外は CheckAndNotifyAsync 内で適切にログ記録される
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await CheckAndNotifyAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled exception in timer elapsed handler");
+            }
+        });
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
 
         Stop();
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 }
