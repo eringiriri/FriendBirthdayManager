@@ -114,7 +114,7 @@ public class SettingsRepository : ISettingsRepository
         {
             await SetAsync("default_notify_days_before", settings.DefaultNotifyDaysBefore.ToString());
             await SetAsync("default_notify_sound", settings.DefaultNotifySound.ToString());
-            await SetAsync("notification_time", settings.NotificationTime.ToString(@"hh\:mm"));
+            await SetAsync("notification_time", settings.NotificationTime.ToString(@"HH\:mm"));
             await SetAsync("start_with_windows", settings.StartWithWindows.ToString());
             await SetAsync("language", settings.Language);
 
