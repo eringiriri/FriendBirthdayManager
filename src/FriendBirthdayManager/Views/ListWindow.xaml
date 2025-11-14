@@ -1,0 +1,81 @@
+<Window x:Class="FriendBirthdayManager.Views.ListWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:FriendBirthdayManager.ViewModels"
+        mc:Ignorable="d"
+        Title="友人一覧 - Friend Birthday Manager"
+        Height="600"
+        Width="800"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.DataContext>
+        <vm:ListViewModel/>
+    </Window.DataContext>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 検索エリア -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+            <TextBlock Text="🔍" VerticalAlignment="Center" FontSize="18" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"
+                     Width="300"
+                     VerticalContentAlignment="Center"
+                     Margin="0,0,10,0"/>
+            <Button Content="検索"
+                    Command="{Binding SearchCommand}"
+                    Width="80"
+                    Margin="0,0,10,0"/>
+            <ComboBox SelectedIndex="{Binding SortIndex}" Width="120" Margin="0,0,10,0">
+                <ComboBoxItem Content="近い順"/>
+                <ComboBoxItem Content="日付順"/>
+                <ComboBoxItem Content="名前順"/>
+            </ComboBox>
+            <Button Content="エクスポート"
+                    Command="{Binding ExportCsvCommand}"
+                    Width="100"/>
+        </StackPanel>
+
+        <!-- 友人リスト -->
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding Friends}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserResizeRows="False"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column"
+                  AlternatingRowBackground="LightGray">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="名前" Binding="{Binding Name}" Width="*"/>
+                <DataGridTextColumn Header="誕生日" Binding="{Binding BirthdayDisplay}" Width="150"/>
+                <DataGridTextColumn Header="あと" Binding="{Binding DaysUntilDisplay}" Width="80"/>
+                <DataGridTextColumn Header="通知" Binding="{Binding NotifyIcon}" Width="60"/>
+                <DataGridTemplateColumn Header="" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="編集"
+                                    Command="{Binding DataContext.EditFriendCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- ステータスバー -->
+        <StatusBar Grid.Row="2" Margin="0,10,0,0">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
