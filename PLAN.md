@@ -51,7 +51,7 @@
 |---------|-----|------|------|
 | id | INTEGER | PRIMARY KEY AUTOINCREMENT | 固有ID |
 | name | TEXT | NOT NULL | 友人の名前 |
-| birthday | TEXT | NULL | 誕生日（ISO 8601形式: "YYYY-MM-DD", "MM-DD", またはNULL） |
+| birthday | TEXT | NULL | 誕生日（"YYYY-MM-DD", "MM-DD", "YYYY", "MM", "DD", またはNULL） |
 | memo | TEXT | NULL | メモ |
 | notify_days_before | INTEGER | NULL CHECK(notify_days_before BETWEEN 1 AND 30) | 個人通知設定（NULL=デフォルト使用） |
 | notify_enabled | INTEGER | NOT NULL DEFAULT 1 CHECK(notify_enabled IN (0, 1)) | 通知有効フラグ |
@@ -230,16 +230,19 @@ public class Migration_001_AddAliasesTable : IDatabaseMigration
 **機能**:
 - 入力バリデーション（**名前のみ必須**、その他任意）
 - 誕生日形式: DatePicker使用で入力ミス防止
-  - 完全形式: YYYY-MM-DD（例: 2000-05-15）
-  - 月日のみ: MM-DD（例: 05-15）チェックボックスで年を省略
-  - 未入力: NULL
+  - 完全形式: YYYY-MM-DD（例: 2000-05-15）→ 通知可能
+  - 月日のみ: MM-DD（例: 05-15）チェックボックスで年を省略 → 通知可能
+  - 年のみ: YYYY（例: 2000）→ 通知不可、記録のみ
+  - 月のみ: MM（例: 05）→ 通知不可、記録のみ
+  - 日のみ: DD（例: 15）→ 通知不可、記録のみ
+  - 未入力: NULL → 通知不可
 - エイリアス: 動的に追加可能（個別の入力フィールド）
-- 直近5件の誕生日を表示（誕生日未設定は除外）
+- 直近5件の誕生日を表示（**月日が登録されている友人のみ**）
 - キーボードショートカット対応（Ctrl+N: 新規登録、Ctrl+L: 一覧表示）
 
 **バリデーション**:
 - 名前: 1文字以上、200文字以下
-- 誕生日: 有効な日付（うるう年考慮）
+- 誕生日: 有効な日付（うるう年考慮、部分入力も許可）
 - エイリアス: 各50文字以下
 - メモ: 5000文字以下
 
@@ -648,7 +651,7 @@ public class Friend
 
     public required string Name { get; set; }  // C# 11+ required修飾子
 
-    public string? Birthday { get; set; }  // ISO 8601: "YYYY-MM-DD" or "MM-DD"
+    public string? Birthday { get; set; }  // "YYYY-MM-DD", "MM-DD", "YYYY", "MM", "DD", or NULL
 
     public string? Memo { get; set; }
 
@@ -711,13 +714,29 @@ public record BirthdayComponents(int? Year, int? Month, int? Day)
         var parts = birthday.Split('-');
         return parts.Length switch
         {
-            3 => new(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2])),
-            2 => new(null, int.Parse(parts[0]), int.Parse(parts[1])),
+            3 => new(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2])),  // YYYY-MM-DD
+            2 => new(null, int.Parse(parts[0]), int.Parse(parts[1])),                // MM-DD
+            1 => ParseSingleComponent(parts[0]),                                      // YYYY or MM or DD
             _ => new(null, null, null)
         };
     }
 
+    private static BirthdayComponents ParseSingleComponent(string value)
+    {
+        if (!int.TryParse(value, out int num)) return new(null, null, null);
+
+        // 判定ロジック: 4桁=年、1-12=月の可能性、1-31=日の可能性
+        return num switch
+        {
+            >= 1000 => new(num, null, null),           // 年のみ (YYYY)
+            >= 1 and <= 12 => new(null, num, null),    // 月のみ (MM) ※1-12は月として扱う
+            >= 13 and <= 31 => new(null, null, num),   // 日のみ (DD)
+            _ => new(null, null, null)                 // 無効
+        };
+    }
+
     public bool IsValid() => Month.HasValue && Day.HasValue;
+    public bool IsNotificationTarget() => Month.HasValue && Day.HasValue;  // 通知対象判定
 }
 
 public class AppSettings
@@ -852,15 +871,32 @@ public async Task<ImportResult> ImportAsync(string filePath)
 public class FriendTests
 {
     [Theory]
-    [InlineData("2000-05-15", 5, 15, true)]
-    [InlineData("05-15", 5, 15, true)]
-    [InlineData("2000", null, null, false)]
-    [InlineData(null, null, null, false)]
+    [InlineData("2000-05-15", 5, 15, true)]   // 年月日 → 通知可能
+    [InlineData("05-15", 5, 15, true)]        // 月日 → 通知可能
+    [InlineData("2000", null, null, false)]   // 年のみ → 通知不可
+    [InlineData("05", null, null, false)]     // 月のみ → 通知不可
+    [InlineData("15", null, null, false)]     // 日のみ → 通知不可
+    [InlineData(null, null, null, false)]     // 未入力 → 通知不可
     public void HasValidBirthdayForNotification_ReturnsExpected(
         string? birthday, int? month, int? day, bool expected)
     {
         var friend = new Friend { Name = "Test", Birthday = birthday };
         friend.HasValidBirthdayForNotification().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("2000", 2000, null, null)]    // 年のみ
+    [InlineData("05", null, 5, null)]         // 月のみ
+    [InlineData("15", null, null, 15)]        // 日のみ（13-31）
+    [InlineData("2000-05-15", 2000, 5, 15)]   // 完全
+    [InlineData("05-15", null, 5, 15)]        // 月日
+    public void BirthdayComponents_ParsePartialDates_ReturnsExpected(
+        string? input, int? expectedYear, int? expectedMonth, int? expectedDay)
+    {
+        var components = BirthdayComponents.Parse(input);
+        components.Year.Should().Be(expectedYear);
+        components.Month.Should().Be(expectedMonth);
+        components.Day.Should().Be(expectedDay);
     }
 
     [Fact]
@@ -956,6 +992,8 @@ public class DatabaseIntegrationTests : IDisposable
 - [ ] 通知API呼び出し失敗
 - [ ] 特殊文字を含む名前（絵文字、制御文字）
 - [ ] 超長文メモ（5,000文字）
+- [ ] 部分入力（年のみ、月のみ、日のみ）の動作確認
+- [ ] 1-12の曖昧な数値（月として扱われるか確認）
 
 ---
 
@@ -968,6 +1006,8 @@ name,birthday,aliases,memo,notify_days_before,notify_enabled,notify_sound_enable
 山田太郎,2000-05-15,"tarou,taro,たろー",高校時代の友人,3,1,1
 佐藤花子,05-25,"hanako,はなこ","大学の先輩
 2行目のメモ",,1,
+鈴木一郎,2000,ichiro,2000年生まれ（月日不明）,,,1
+田中花子,05,hanako,5月生まれ（日不明）,,,1
 田中次郎,,,,,,0
 ```
 
@@ -1433,9 +1473,17 @@ _logger.LogError(ex, "Database operation failed");
 |---------|-------|------|------|
 | 年月日 | 2000-05-15 | ✅ | 毎年5月15日に通知 |
 | 月日のみ | 05-15 | ✅ | 毎年5月15日に通知 |
+| 年のみ | 2000 | ❌ | 通知なし、「2000年生まれ」などの情報を記録可能 |
+| 月のみ | 05 | ❌ | 通知なし、「5月生まれ」などの情報を記録可能 |
+| 日のみ | 15 | ❌ | 通知なし、「15日生まれ」などの情報を記録可能 |
 | 未入力 | (NULL) | ❌ | 通知なし、一覧では最後に表示 |
 
 **重要**: 通知が行われるのは「月と日の両方が入力されている場合のみ」
+
+**ユースケース**: 友人から断片的な情報しか得られなかった場合でも登録可能
+- 「何年生まれ？」→「2000年だよ」→ 年のみ登録
+- 「誕生日いつ？」→「5月です」→ 月のみ登録
+- 「何日生まれ？」→「15日」→ 日のみ登録
 
 ### 3. 日付計算
 - **うるう年対応必須**
@@ -1453,6 +1501,8 @@ _logger.LogError(ex, "Database operation failed");
 4. 1月5日（あと52日）
 5. 10月1日（あと321日） ← 来年の誕生日
 6. 田中次郎（未設定）--- ← 誕生日未設定は最後
+7. 鈴木一郎（2000年のみ）--- ← 部分入力も最後
+8. 佐藤花子（5月のみ）--- ← 部分入力も最後
 ```
 
 ### 5. CSV フォーマット（RFC 4180準拠）
@@ -1462,6 +1512,7 @@ name,birthday,aliases,memo,notify_days_before,notify_enabled,notify_sound_enable
 山田太郎,2000-05-15,"tarou,taro,たろー",高校時代の友人,3,1,1
 佐藤花子,05-25,"hanako,はなこ","大学の先輩
 2行目も可能",,1,
+鈴木一郎,2000,ichiro,2000年生まれ,,,1
 田中次郎,,,,,,0
 ```
 
@@ -1557,7 +1608,7 @@ dotnet ef database update
 
 **ドキュメント作成日**: 2025-11-14
 **改訂日**: 2025-11-14
-**バージョン**: 2.0（全面改訂版）
+**バージョン**: 2.1（部分入力対応版）
 **作成者**: Claude (Anthropic)
 **プロジェクトオーナー**: えりんぎ (@eringi_vrc)
 **ライセンス**: MIT License
@@ -1570,6 +1621,7 @@ dotnet ef database update
 |----------|------|---------|
 | 1.0 | 2025-11-14 | 初版作成 |
 | 2.0 | 2025-11-14 | 全面改訂（DB正規化、FTS5、DI、セキュリティ、テスト強化） |
+| 2.1 | 2025-11-14 | 部分入力対応（年のみ、月のみ、日のみの登録が可能に） |
 
 ---
 
