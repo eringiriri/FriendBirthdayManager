@@ -17,6 +17,7 @@ public partial class ListViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ListViewModel> _logger;
     private List<Friend> _allFriends = new();
+    private CancellationTokenSource? _searchCancellationTokenSource;
 
     [ObservableProperty]
     private ObservableCollection<FriendListItem> _friends = new();
@@ -43,17 +44,34 @@ public partial class ListViewModel : ObservableObject
     partial void OnSearchKeywordChanged(string value)
     {
         // 即時検索: 検索キーワードが変更されたら自動的に検索を実行
+        // 前の検索をキャンセル
+        _searchCancellationTokenSource?.Cancel();
+        _searchCancellationTokenSource = new CancellationTokenSource();
+
+        var cancellationToken = _searchCancellationTokenSource.Token;
+
         _ = Task.Run(async () =>
         {
             try
             {
-                await LoadFriendsAsync();
+                // 少し遅延を入れてデバウンス効果を持たせる（300ms）
+                await Task.Delay(300, cancellationToken);
+
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    await LoadFriendsAsync();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // キャンセルされた場合は何もしない
+                _logger.LogDebug("Search cancelled due to new keyword input");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to load friends on search keyword change");
             }
-        });
+        }, cancellationToken);
     }
 
     partial void OnSortIndexChanged(int value)
@@ -167,32 +185,22 @@ public partial class ListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EditFriend(FriendListItem friend)
+    private async Task EditFriend(FriendListItem friend)
     {
         try
         {
             _logger.LogInformation("Edit friend: {FriendId}", friend.Id);
             var editWindow = _serviceProvider.GetRequiredService<Views.EditWindow>();
 
-            // ウィンドウ表示前にデータをロード（例外をキャッチ）
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await editWindow.LoadFriendAsync(friend.Id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to load friend data for editing: {FriendId}", friend.Id);
-                }
-            });
+            // ウィンドウ表示前にデータをロード（awaitで完了を待つ）
+            await editWindow.LoadFriendAsync(friend.Id);
 
             editWindow.Show();
             editWindow.Activate();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to show edit window");
+            _logger.LogError(ex, "Failed to show edit window or load friend data: {FriendId}", friend.Id);
         }
     }
 
