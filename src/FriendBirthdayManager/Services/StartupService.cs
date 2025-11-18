@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using Microsoft.Extensions.Logging;
 
 namespace FriendBirthdayManager.Services;
@@ -65,18 +64,13 @@ public class StartupService : IStartupService
             _logger.LogInformation("Registering in Windows startup...");
 
             // 実行ファイルのパスを取得
-            var exePath = Assembly.GetExecutingAssembly().Location;
+            // PublishSingleFileの場合でも正しく動作するよう、Environment.ProcessPathを優先使用
+            var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
 
-            // .dllの場合は.exeに変換（dotnet publishで単一実行ファイルの場合）
+            // .dllの場合は.exeに変換（念のため）
             if (exePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             {
                 exePath = exePath.Replace(".dll", ".exe");
-            }
-
-            // 実行ファイルが存在しない場合はProcessのパスを使用
-            if (!File.Exists(exePath))
-            {
-                exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? exePath;
             }
 
             // セキュリティチェック: exePathのバリデーション

@@ -16,6 +16,7 @@ public class TrayIconService : ITrayIconService, IDisposable
     private readonly ILogger<TrayIconService> _logger;
     private TaskbarIcon? _taskbarIcon;
     private bool _disposed;
+    private bool _isIconInitialized;
     private int? _currentDaysUntil;
 
     public TrayIconService(IServiceProvider serviceProvider, ILogger<TrayIconService> logger)
@@ -67,12 +68,13 @@ public class TrayIconService : ITrayIconService, IDisposable
                 return;
             }
 
-            // 既に同じ状態の場合は更新しない
-            if (_currentDaysUntil == daysUntilNextBirthday)
+            // 初回ではない、かつ既に同じ状態の場合は更新しない
+            if (_isIconInitialized && _currentDaysUntil == daysUntilNextBirthday)
             {
                 return;
             }
 
+            _isIconInitialized = true;
             _currentDaysUntil = daysUntilNextBirthday;
 
             Application.Current.Dispatcher.Invoke(() =>
