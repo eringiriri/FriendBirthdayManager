@@ -238,7 +238,7 @@ public partial class EditViewModel : ObservableObject
             {
                 friend.Aliases.Add(new Alias
                 {
-                    AliasName = aliasItem.Value.Trim(),
+                    AliasName = aliasItem.Value!.Trim(),
                     FriendId = friend.Id,
                     CreatedAt = DateTime.UtcNow
                 });
