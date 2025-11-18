@@ -81,7 +81,7 @@ public partial class ListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task LoadFriendsAsync()
+    public async Task LoadFriendsAsync()
     {
         try
         {
