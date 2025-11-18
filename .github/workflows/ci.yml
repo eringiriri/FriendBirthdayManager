@@ -28,6 +28,23 @@ jobs:
     - name: Test
       run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
+    - name: Publish Release Build (win-x64)
+      run: |
+        dotnet publish src/FriendBirthdayManager/FriendBirthdayManager.csproj `
+          -c Release `
+          -r win-x64 `
+          --self-contained true `
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -o ./publish/win-x64
+
+    - name: Upload executable artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: FriendBirthdayManager-win-x64
+        path: ./publish/win-x64/*.exe
+        retention-days: 30
+
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
       if: always()
