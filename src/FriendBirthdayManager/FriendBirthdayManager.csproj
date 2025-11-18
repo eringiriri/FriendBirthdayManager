@@ -7,7 +7,6 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>12.0</LangVersion>
-    <ApplicationIcon>Resources\Icons\birthday.ico</ApplicationIcon>
     <StartupObject>FriendBirthdayManager.App</StartupObject>
   </PropertyGroup>
 
