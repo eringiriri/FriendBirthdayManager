@@ -1,9 +1,6 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using FriendBirthdayManager.Data;
 using H.NotifyIcon;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -81,11 +78,12 @@ public class TrayIconService : ITrayIconService, IDisposable
             Application.Current.Dispatcher.Invoke(() =>
             {
                 string iconFileName = GetIconFileName(daysUntilNextBirthday);
-                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Icons", iconFileName);
+                // WPFリソースとして埋め込まれたアイコンを読み込む（pack URI）
+                string iconUri = $"pack://application:,,,/Resources/Icons/{iconFileName}";
 
-                if (File.Exists(iconPath))
+                try
                 {
-                    var iconSource = new BitmapImage(new Uri(iconPath, UriKind.Absolute));
+                    var iconSource = new BitmapImage(new Uri(iconUri, UriKind.Absolute));
                     _taskbarIcon.IconSource = iconSource;
 
                     string tooltip = daysUntilNextBirthday.HasValue
@@ -95,9 +93,9 @@ public class TrayIconService : ITrayIconService, IDisposable
 
                     _logger.LogInformation("Tray icon updated: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger.LogWarning("Icon file not found: {IconPath}", iconPath);
+                    _logger.LogWarning(ex, "Failed to load icon resource: {IconUri}", iconUri);
                 }
             });
         }
