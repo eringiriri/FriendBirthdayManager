@@ -66,7 +66,11 @@ public partial class ListViewModel : ObservableObject
 
                 if (!cancellationToken.IsCancellationRequested)
                 {
-                    await LoadFriendsAsync();
+                    // UIスレッドで実行
+                    await Application.Current.Dispatcher.InvokeAsync(async () =>
+                    {
+                        await LoadFriendsAsync();
+                    });
                 }
             }
             catch (OperationCanceledException)
