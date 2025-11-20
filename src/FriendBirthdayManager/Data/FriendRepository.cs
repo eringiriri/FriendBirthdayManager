@@ -116,7 +116,37 @@ public class FriendRepository : IFriendRepository
                 return await GetAllAsync();
             }
 
-            // LINQで部分一致検索を実行（パラメータ化クエリにより安全）
+            // 特殊検索パターンをチェック（月:数字、日:数字）
+            var monthMatch = System.Text.RegularExpressions.Regex.Match(keyword, @"月[:\s]*(\d+)");
+            var dayMatch = System.Text.RegularExpressions.Regex.Match(keyword, @"日[:\s]*(\d+)");
+
+            // 誕生月または誕生日での検索
+            if (monthMatch.Success || dayMatch.Success)
+            {
+                IQueryable<Friend> query = _context.Friends;
+
+                if (monthMatch.Success && int.TryParse(monthMatch.Groups[1].Value, out int month))
+                {
+                    if (month >= 1 && month <= 12)
+                    {
+                        query = query.Where(f => f.BirthMonth == month);
+                        _logger.LogInformation("Searching by birth month: {Month}", month);
+                    }
+                }
+
+                if (dayMatch.Success && int.TryParse(dayMatch.Groups[1].Value, out int day))
+                {
+                    if (day >= 1 && day <= 31)
+                    {
+                        query = query.Where(f => f.BirthDay == day);
+                        _logger.LogInformation("Searching by birth day: {Day}", day);
+                    }
+                }
+
+                return await query.Include(f => f.Aliases).ToListAsync();
+            }
+
+            // 通常の検索（名前、メモ、エイリアス）
             var friendIdsFromNameOrMemo = await _context.Friends
                 .Where(f => f.Name.Contains(keyword) || (f.Memo != null && f.Memo.Contains(keyword)))
                 .Select(f => f.Id)
