@@ -17,6 +17,7 @@ public class TrayIconService : ITrayIconService, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<TrayIconService> _logger;
     private TaskbarIcon? _taskbarIcon;
+    private Icon? _currentIcon;
     private bool _disposed;
     private bool _isIconInitialized;
     private int? _currentDaysUntil;
@@ -41,14 +42,18 @@ public class TrayIconService : ITrayIconService, IDisposable
                     ContextMenu = CreateContextMenu()
                 };
 
-                // 初期アイコンを設定
-                UpdateIcon(null);
-
                 // ダブルクリックでメインウィンドウを表示
                 _taskbarIcon.TrayMouseDoubleClick += (s, e) =>
                 {
                     ShowMainWindow();
                 };
+
+                // タスクトレイアイコンを強制的に作成
+                _taskbarIcon.ForceCreate();
+                _logger.LogInformation("TaskbarIcon ForceCreate called");
+
+                // アイコンを作成後に初期アイコンを設定
+                UpdateIcon(null);
             });
 
             _logger.LogInformation("Tray icon initialized successfully");
@@ -89,24 +94,23 @@ public class TrayIconService : ITrayIconService, IDisposable
                 {
                     var assembly = Assembly.GetExecutingAssembly();
 
-                    // デバッグ: 埋め込まれているすべてのリソース名をログ出力
-                    var resourceNames = assembly.GetManifestResourceNames();
-                    _logger.LogInformation("Available embedded resources: {Resources}", string.Join(", ", resourceNames));
-
                     using (var stream = assembly.GetManifestResourceStream(resourceName))
                     {
                         if (stream != null)
                         {
-                            _logger.LogInformation("Loading icon from resource: {ResourceName}, Stream length: {Length}", resourceName, stream.Length);
-                            var icon = new Icon(stream);
-                            _taskbarIcon.Icon = icon;
+                            // 古いアイコンをDispose
+                            _currentIcon?.Dispose();
+
+                            // 新しいアイコンを作成して設定
+                            _currentIcon = new Icon(stream);
+                            _taskbarIcon.Icon = _currentIcon;
 
                             string tooltip = daysUntilNextBirthday.HasValue
                                 ? $"Friend Birthday Manager - あと{daysUntilNextBirthday.Value}日"
                                 : "Friend Birthday Manager";
                             _taskbarIcon.ToolTipText = tooltip;
 
-                            _logger.LogInformation("Tray icon updated successfully: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
+                            _logger.LogInformation("Tray icon updated: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
                         }
                         else
                         {
@@ -297,6 +301,7 @@ public class TrayIconService : ITrayIconService, IDisposable
         Application.Current.Dispatcher.Invoke(() =>
         {
             _taskbarIcon?.Dispose();
+            _currentIcon?.Dispose();
         });
 
         _disposed = true;
