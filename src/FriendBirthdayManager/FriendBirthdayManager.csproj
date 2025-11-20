@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\Icons\*.ico" />
+    <EmbeddedResource Include="Resources\Icons\*.ico" />
   </ItemGroup>
 
 </Project>
