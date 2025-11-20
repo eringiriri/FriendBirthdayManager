@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -85,8 +86,15 @@ public class TrayIconService : ITrayIconService, IDisposable
 
                 try
                 {
-                    var iconSource = new BitmapImage(new Uri(iconUri, UriKind.Absolute));
-                    _taskbarIcon.IconSource = iconSource;
+                    var streamResourceInfo = Application.GetResourceStream(new Uri(iconUri, UriKind.Absolute));
+                    if (streamResourceInfo != null)
+                    {
+                        using (var stream = streamResourceInfo.Stream)
+                        {
+                            var icon = new Icon(stream);
+                            _taskbarIcon.Icon = icon;
+                        }
+                    }
 
                     string tooltip = daysUntilNextBirthday.HasValue
                         ? $"Friend Birthday Manager - あと{daysUntilNextBirthday.Value}日"
@@ -170,10 +178,10 @@ public class TrayIconService : ITrayIconService, IDisposable
     {
         if (daysUntil.HasValue && daysUntil.Value >= 1 && daysUntil.Value <= 9)
         {
-            return $"number_{daysUntil.Value}.png";
+            return $"number_{daysUntil.Value}.ico";
         }
 
-        return "birthday_cake.png";
+        return "birthday_cake.ico";
     }
 
     private void ShowMainWindow()
