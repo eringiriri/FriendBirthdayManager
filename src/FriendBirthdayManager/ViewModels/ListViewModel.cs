@@ -1,11 +1,14 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FriendBirthdayManager.Data;
 using FriendBirthdayManager.Models;
+using FriendBirthdayManager.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 
 namespace FriendBirthdayManager.ViewModels;
 
@@ -15,6 +18,7 @@ namespace FriendBirthdayManager.ViewModels;
 public partial class ListViewModel : ObservableObject
 {
     private readonly IFriendRepository _friendRepository;
+    private readonly ICsvService _csvService;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ListViewModel> _logger;
     private List<Friend> _allFriends = new();
@@ -34,10 +38,12 @@ public partial class ListViewModel : ObservableObject
 
     public ListViewModel(
         IFriendRepository friendRepository,
+        ICsvService csvService,
         IServiceProvider serviceProvider,
         ILogger<ListViewModel> logger)
     {
         _friendRepository = friendRepository;
+        _csvService = csvService;
         _serviceProvider = serviceProvider;
         _logger = logger;
     }
@@ -253,10 +259,63 @@ public partial class ListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ExportCsv()
+    private async Task ExportCsv()
     {
-        _logger.LogInformation("Export CSV requested");
-        // TODO: CSV エクスポート（Phase 7で実装）
+        try
+        {
+            _logger.LogInformation("Export CSV requested");
+
+            // ファイル保存ダイアログを表示
+            var dialog = new SaveFileDialog
+            {
+                Filter = "CSV ファイル (*.csv)|*.csv|すべてのファイル (*.*)|*.*",
+                DefaultExt = "csv",
+                FileName = $"friends_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                Title = "CSVファイルのエクスポート"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                _logger.LogInformation("CSV export cancelled by user");
+                return;
+            }
+
+            StatusMessage = "エクスポート中...";
+
+            // CSVエクスポート実行
+            var success = await _csvService.ExportAsync(dialog.FileName);
+
+            if (success)
+            {
+                StatusMessage = $"CSVファイルをエクスポートしました: {Path.GetFileName(dialog.FileName)}";
+                MessageBox.Show(
+                    $"CSVファイルをエクスポートしました。\n\n{dialog.FileName}",
+                    "エクスポート完了",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                _logger.LogInformation("CSV export completed: {FilePath}", dialog.FileName);
+            }
+            else
+            {
+                StatusMessage = "エラー: CSVエクスポートに失敗しました";
+                MessageBox.Show(
+                    "CSVファイルのエクスポートに失敗しました。",
+                    "エラー",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                _logger.LogError("CSV export failed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to export CSV");
+            StatusMessage = "エラー: CSVエクスポートに失敗しました";
+            MessageBox.Show(
+                $"CSVファイルのエクスポートに失敗しました: {ex.Message}",
+                "エラー",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 }
 
