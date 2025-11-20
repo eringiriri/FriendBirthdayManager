@@ -94,16 +94,10 @@ public class TrayIconService : ITrayIconService, IDisposable
                 {
                     var assembly = Assembly.GetExecutingAssembly();
 
-                    // デバッグ: 埋め込まれているすべてのリソース名をログ出力
-                    var resourceNames = assembly.GetManifestResourceNames();
-                    _logger.LogInformation("Available embedded resources: {Resources}", string.Join(", ", resourceNames));
-
                     using (var stream = assembly.GetManifestResourceStream(resourceName))
                     {
                         if (stream != null)
                         {
-                            _logger.LogInformation("Loading icon from resource: {ResourceName}, Stream length: {Length}", resourceName, stream.Length);
-
                             // 古いアイコンをDispose
                             _currentIcon?.Dispose();
 
@@ -116,7 +110,7 @@ public class TrayIconService : ITrayIconService, IDisposable
                                 : "Friend Birthday Manager";
                             _taskbarIcon.ToolTipText = tooltip;
 
-                            _logger.LogInformation("Tray icon updated successfully: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
+                            _logger.LogInformation("Tray icon updated: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
                         }
                         else
                         {
