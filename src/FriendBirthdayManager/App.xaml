@@ -6,7 +6,6 @@
         <!-- Application-wide resources -->
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Add theme dictionaries here if needed -->
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -201,6 +201,17 @@ public partial class ListViewModel : ObservableObject
         try
         {
             _logger.LogInformation("Edit friend: {FriendId}", friend.Id);
+
+            // 既に同じ友人の編集ウィンドウが開いているかチェック
+            var existingWindow = Application.Current.Windows.OfType<Views.EditWindow>()
+                .FirstOrDefault(w => w.FriendId == friend.Id);
+            if (existingWindow != null)
+            {
+                existingWindow.Activate();
+                _logger.LogInformation("Edit window already open for friend: {FriendId}", friend.Id);
+                return;
+            }
+
             var editWindow = _serviceProvider.GetRequiredService<Views.EditWindow>();
 
             // ウィンドウ表示前にデータをロード（awaitで完了を待つ）
@@ -290,7 +301,8 @@ public partial class ListViewModel : ObservableObject
 
             // 結果メッセージの作成
             var messageLines = new List<string>();
-            messageLines.Add($"成功: {result.SuccessCount}件");
+            messageLines.Add($"新規登録: {result.SuccessCount}件");
+            messageLines.Add($"更新: {result.UpdateCount}件");
             messageLines.Add($"失敗: {result.FailureCount}件");
 
             if (result.Errors.Count > 0)
@@ -308,7 +320,7 @@ public partial class ListViewModel : ObservableObject
                 }
             }
 
-            StatusMessage = $"インポート完了: 成功 {result.SuccessCount}件, 失敗 {result.FailureCount}件";
+            StatusMessage = $"インポート完了: 新規 {result.SuccessCount}件, 更新 {result.UpdateCount}件, 失敗 {result.FailureCount}件";
 
             // 結果ダイアログを表示
             var messageType = result.FailureCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information;
@@ -318,11 +330,11 @@ public partial class ListViewModel : ObservableObject
                 MessageBoxButton.OK,
                 messageType);
 
-            _logger.LogInformation("CSV import completed: Success={SuccessCount}, Failure={FailureCount}",
-                result.SuccessCount, result.FailureCount);
+            _logger.LogInformation("CSV import completed: Success={SuccessCount}, Update={UpdateCount}, Failure={FailureCount}",
+                result.SuccessCount, result.UpdateCount, result.FailureCount);
 
-            // 成功件数が1件以上ある場合はリストを再読み込み
-            if (result.SuccessCount > 0)
+            // 成功または更新が1件以上ある場合はリストを再読み込み
+            if (result.SuccessCount > 0 || result.UpdateCount > 0)
             {
                 await LoadFriendsAsync();
             }
