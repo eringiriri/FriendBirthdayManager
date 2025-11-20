@@ -88,10 +88,16 @@ public class TrayIconService : ITrayIconService, IDisposable
                 try
                 {
                     var assembly = Assembly.GetExecutingAssembly();
+
+                    // デバッグ: 埋め込まれているすべてのリソース名をログ出力
+                    var resourceNames = assembly.GetManifestResourceNames();
+                    _logger.LogInformation("Available embedded resources: {Resources}", string.Join(", ", resourceNames));
+
                     using (var stream = assembly.GetManifestResourceStream(resourceName))
                     {
                         if (stream != null)
                         {
+                            _logger.LogInformation("Loading icon from resource: {ResourceName}, Stream length: {Length}", resourceName, stream.Length);
                             var icon = new Icon(stream);
                             _taskbarIcon.Icon = icon;
 
@@ -100,7 +106,7 @@ public class TrayIconService : ITrayIconService, IDisposable
                                 : "Friend Birthday Manager";
                             _taskbarIcon.ToolTipText = tooltip;
 
-                            _logger.LogInformation("Tray icon updated: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
+                            _logger.LogInformation("Tray icon updated successfully: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
                         }
                         else
                         {
@@ -110,7 +116,7 @@ public class TrayIconService : ITrayIconService, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to load icon resource: {ResourceName}", resourceName);
+                    _logger.LogError(ex, "Failed to load icon resource: {ResourceName}", resourceName);
                 }
             });
         }
