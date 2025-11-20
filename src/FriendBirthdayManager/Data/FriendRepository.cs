@@ -116,9 +116,12 @@ public class FriendRepository : IFriendRepository
                 return await GetAllAsync();
             }
 
+            // 全角数字を半角数字に変換
+            var normalizedKeyword = NormalizeNumbers(keyword);
+
             // 特殊検索パターンをチェック（月:数字、日:数字）
-            var monthMatch = System.Text.RegularExpressions.Regex.Match(keyword, @"月[:\s]*(\d+)");
-            var dayMatch = System.Text.RegularExpressions.Regex.Match(keyword, @"日[:\s]*(\d+)");
+            var monthMatch = System.Text.RegularExpressions.Regex.Match(normalizedKeyword, @"月[:\s]*(\d+)");
+            var dayMatch = System.Text.RegularExpressions.Regex.Match(normalizedKeyword, @"日[:\s]*(\d+)");
 
             // 誕生月または誕生日での検索
             if (monthMatch.Success || dayMatch.Success)
@@ -175,6 +178,30 @@ public class FriendRepository : IFriendRepository
             _logger.LogError(ex, "Failed to search friends with keyword: {Keyword}", keyword);
             throw;
         }
+    }
+
+    /// <summary>
+    /// 全角数字を半角数字に変換
+    /// </summary>
+    private string NormalizeNumbers(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        var result = new System.Text.StringBuilder();
+        foreach (char c in input)
+        {
+            // 全角数字（０-９）を半角数字（0-9）に変換
+            if (c >= '０' && c <= '９')
+            {
+                result.Append((char)(c - '０' + '0'));
+            }
+            else
+            {
+                result.Append(c);
+            }
+        }
+        return result.ToString();
     }
 
     public async Task<List<Friend>> GetUpcomingBirthdaysAsync(DateTime referenceDate, int count)

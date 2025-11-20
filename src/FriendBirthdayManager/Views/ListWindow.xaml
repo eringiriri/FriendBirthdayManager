@@ -28,11 +28,6 @@
                     <KeyBinding Key="Escape" Command="{Binding ClearSearchCommand}"/>
                 </TextBox.InputBindings>
             </TextBox>
-            <TextBlock Text="（入力すると自動検索）"
-                       VerticalAlignment="Center"
-                       FontSize="10"
-                       Foreground="Gray"
-                       Margin="0,0,10,0"/>
             <ComboBox SelectedIndex="{Binding SortIndex}" Width="120" Margin="0,0,10,0">
                 <ComboBoxItem Content="近い順"/>
                 <ComboBoxItem Content="日付順"/>
