@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading;
 using System.Windows;
 using FriendBirthdayManager.Data;
 using FriendBirthdayManager.Services;
@@ -19,6 +20,13 @@ public partial class App : Application
     private IServiceProvider? _serviceProvider;
     private ITrayIconService? _trayIconService;
     private INotificationService? _notificationService;
+    private static Mutex? _mutex;
+    private const string MutexName = "FriendBirthdayManager_SingleInstance";
+
+    /// <summary>
+    /// サービスプロバイダー
+    /// </summary>
+    public IServiceProvider? Services => _serviceProvider;
 
     public App()
     {
@@ -29,6 +37,22 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // 多重起動チェック
+        bool createdNew;
+        _mutex = new Mutex(true, MutexName, out createdNew);
+
+        if (!createdNew)
+        {
+            // 既に起動している場合は終了
+            MessageBox.Show(
+                "Friend Birthday Manager は既に起動しています。\nタスクトレイアイコンからアクセスしてください。",
+                "多重起動",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            Shutdown(1);
+            return;
+        }
 
         try
         {
@@ -84,6 +108,11 @@ public partial class App : Application
         {
             disposable.Dispose();
         }
+
+        // Mutexを解放
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
+        _mutex = null;
 
         Log.CloseAndFlush();
         base.OnExit(e);

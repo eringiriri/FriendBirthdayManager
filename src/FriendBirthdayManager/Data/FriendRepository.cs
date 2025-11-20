@@ -116,7 +116,56 @@ public class FriendRepository : IFriendRepository
                 return await GetAllAsync();
             }
 
-            // LINQで部分一致検索を実行（パラメータ化クエリにより安全）
+            // 特殊検索パターンをチェック（m:数字、d:数字）
+            var monthMatch = System.Text.RegularExpressions.Regex.Match(keyword, @"m[:\s]*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var dayMatch = System.Text.RegularExpressions.Regex.Match(keyword, @"d[:\s]*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // 誕生月または誕生日での検索
+            if (monthMatch.Success || dayMatch.Success)
+            {
+                IQueryable<Friend> query = _context.Friends;
+                bool hasValidCondition = false;
+
+                if (monthMatch.Success && int.TryParse(monthMatch.Groups[1].Value, out int month))
+                {
+                    if (month >= 1 && month <= 12)
+                    {
+                        query = query.Where(f => f.BirthMonth == month);
+                        hasValidCondition = true;
+                        _logger.LogInformation("Searching by birth month: {Month}", month);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Invalid birth month in search: {Month}", month);
+                        return new List<Friend>(); // 範囲外の月は空リストを返す
+                    }
+                }
+
+                if (dayMatch.Success && int.TryParse(dayMatch.Groups[1].Value, out int day))
+                {
+                    if (day >= 1 && day <= 31)
+                    {
+                        query = query.Where(f => f.BirthDay == day);
+                        hasValidCondition = true;
+                        _logger.LogInformation("Searching by birth day: {Day}", day);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Invalid birth day in search: {Day}", day);
+                        return new List<Friend>(); // 範囲外の日は空リストを返す
+                    }
+                }
+
+                // 有効な条件がない場合は空リストを返す
+                if (!hasValidCondition)
+                {
+                    return new List<Friend>();
+                }
+
+                return await query.Include(f => f.Aliases).ToListAsync();
+            }
+
+            // 通常の検索（名前、メモ、エイリアス）
             var friendIdsFromNameOrMemo = await _context.Friends
                 .Where(f => f.Name.Contains(keyword) || (f.Memo != null && f.Memo.Contains(keyword)))
                 .Select(f => f.Id)

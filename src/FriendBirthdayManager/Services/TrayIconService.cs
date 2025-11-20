@@ -231,9 +231,18 @@ public class TrayIconService : ITrayIconService, IDisposable
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var listWindow = _serviceProvider.GetRequiredService<Views.ListWindow>();
-                listWindow.Show();
-                listWindow.Activate();
+                var listWindow = Application.Current.Windows.OfType<Views.ListWindow>().FirstOrDefault();
+                if (listWindow == null)
+                {
+                    listWindow = _serviceProvider.GetRequiredService<Views.ListWindow>();
+                    listWindow.Show();
+                }
+                else
+                {
+                    listWindow.Show();
+                    listWindow.WindowState = WindowState.Normal;
+                    listWindow.Activate();
+                }
             });
         }
         catch (Exception ex)

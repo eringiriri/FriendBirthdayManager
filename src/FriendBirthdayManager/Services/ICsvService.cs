@@ -21,6 +21,7 @@ public interface ICsvService
 /// </summary>
 public record ImportResult(
     int SuccessCount,
+    int UpdateCount,
     int FailureCount,
     List<string> Errors
 );

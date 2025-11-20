@@ -1,71 +1,66 @@
-using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 
 namespace FriendBirthdayManager.Services;
 
 /// <summary>
 /// Windowsスタートアップ登録サービスの実装
-/// タスクスケジューラを使用してスタートアップ登録を行う（UAC不要）
+/// レジストリを使用してスタートアップ登録を行う（UAC不要）
 /// </summary>
 public class StartupService : IStartupService
 {
     private readonly ILogger<StartupService> _logger;
-    private const string TaskName = "FriendBirthdayManager_Startup";
+    private const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string RegistryValueName = "FriendBirthdayManager";
 
     public StartupService(ILogger<StartupService> logger)
     {
         _logger = logger;
     }
 
-    public async Task<bool> IsRegisteredAsync()
+    public Task<bool> IsRegisteredAsync()
     {
         try
         {
             _logger.LogInformation("Checking if registered in Windows startup...");
 
-            // タスクスケジューラでタスクの存在を確認
-            var startInfo = new ProcessStartInfo
+            using var key = Registry.CurrentUser.OpenSubKey(RegistryKeyPath, false);
+            if (key == null)
             {
-                FileName = "schtasks",
-                Arguments = $"/Query /TN \"{TaskName}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(startInfo);
-            if (process == null)
-            {
-                _logger.LogWarning("Failed to start schtasks process");
-                return false;
+                _logger.LogInformation("Startup registration status: false (registry key not found)");
+                return Task.FromResult(false);
             }
 
-            await process.WaitForExitAsync();
+            var value = key.GetValue(RegistryValueName);
+            var isRegistered = value != null;
 
-            // ExitCode 0 = タスクが存在する
-            var isRegistered = process.ExitCode == 0;
-            _logger.LogInformation("Startup registration status: {IsRegistered}", isRegistered);
+            if (isRegistered)
+            {
+                _logger.LogInformation("Startup registration status: true (value: {Value})", value);
+            }
+            else
+            {
+                _logger.LogInformation("Startup registration status: false");
+            }
 
-            return isRegistered;
+            return Task.FromResult(isRegistered);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to check startup registration");
-            return false;
+            return Task.FromResult(false);
         }
     }
 
-    public async Task<bool> RegisterAsync()
+    public Task<bool> RegisterAsync()
     {
         try
         {
             _logger.LogInformation("Registering in Windows startup...");
 
             // 実行ファイルのパスを取得
-            // PublishSingleFileの場合でも正しく動作するよう、Environment.ProcessPathを優先使用
-            var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+            var exePath = Environment.ProcessPath ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
 
             // .dllの場合は.exeに変換（念のため）
             if (exePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
@@ -77,117 +72,79 @@ public class StartupService : IStartupService
             if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
             {
                 _logger.LogError("Invalid executable path: {ExePath}", exePath);
-                return false;
-            }
-
-            // パスに危険な文字が含まれていないかチェック（コマンドインジェクション対策）
-            var invalidChars = new[] { '\"', '&', '|', '<', '>', '^' };
-            if (invalidChars.Any(c => exePath.Contains(c)))
-            {
-                _logger.LogError("Executable path contains invalid characters: {ExePath}", exePath);
-                return false;
+                return Task.FromResult(false);
             }
 
             _logger.LogInformation("Executable path: {ExePath}", exePath);
 
-            // 既存のタスクを削除（存在する場合）
-            await UnregisterAsync();
-
-            // タスクスケジューラにタスクを作成
-            // /SC ONLOGON: ログオン時に実行
-            // /TN: タスク名
-            // /TR: 実行するプログラム
-            // /RL HIGHEST: 最高の権限で実行（UAC不要）
-            // /F: 既存のタスクを上書き
-            var startInfo = new ProcessStartInfo
+            // レジストリに書き込み
+            using var key = Registry.CurrentUser.OpenSubKey(RegistryKeyPath, true);
+            if (key == null)
             {
-                FileName = "schtasks",
-                Arguments = $"/Create /SC ONLOGON /TN \"{TaskName}\" /TR \"\\\"{exePath}\\\"\" /RL HIGHEST /F",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(startInfo);
-            if (process == null)
-            {
-                _logger.LogError("Failed to start schtasks process");
-                return false;
+                _logger.LogError("Failed to open registry key: {KeyPath}", RegistryKeyPath);
+                return Task.FromResult(false);
             }
 
-            await process.WaitForExitAsync();
+            // パスにスペースが含まれる場合はダブルクォートで囲む
+            var registryValue = exePath.Contains(" ") ? $"\"{exePath}\"" : exePath;
+            key.SetValue(RegistryValueName, registryValue, RegistryValueKind.String);
 
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-
-            if (process.ExitCode == 0)
-            {
-                _logger.LogInformation("Successfully registered in startup: {Output}", output);
-                return true;
-            }
-            else
-            {
-                _logger.LogError("Failed to register in startup. Exit code: {ExitCode}, Error: {Error}",
-                    process.ExitCode, error);
-                return false;
-            }
+            _logger.LogInformation("Successfully registered in startup: {Value}", registryValue);
+            return Task.FromResult(true);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogError(ex, "Access denied when registering in startup");
+            return Task.FromResult(false);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to register in startup");
-            return false;
+            return Task.FromResult(false);
         }
     }
 
-    public async Task<bool> UnregisterAsync()
+    public Task<bool> UnregisterAsync()
     {
         try
         {
             _logger.LogInformation("Unregistering from Windows startup...");
 
-            // タスクスケジューラからタスクを削除
-            var startInfo = new ProcessStartInfo
+            using var key = Registry.CurrentUser.OpenSubKey(RegistryKeyPath, true);
+            if (key == null)
             {
-                FileName = "schtasks",
-                Arguments = $"/Delete /TN \"{TaskName}\" /F",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(startInfo);
-            if (process == null)
-            {
-                _logger.LogWarning("Failed to start schtasks process");
-                return false;
+                _logger.LogWarning("Registry key not found, already unregistered");
+                return Task.FromResult(true); // キーが存在しない = 既に登録解除済み
             }
 
-            await process.WaitForExitAsync();
-
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-
-            // ExitCode 0 = 成功
-            // タスクが存在しない場合もエラーになるが、結果的には削除されているので成功とみなす
-            if (process.ExitCode == 0)
+            var value = key.GetValue(RegistryValueName);
+            if (value == null)
             {
-                _logger.LogInformation("Successfully unregistered from startup: {Output}", output);
-                return true;
+                _logger.LogInformation("Registry value not found, already unregistered");
+                return Task.FromResult(true); // 値が存在しない = 既に登録解除済み
             }
-            else
-            {
-                // タスクが存在しない場合はエラーだが、目的は達成されているので警告レベル
-                _logger.LogWarning("Unregister result - Exit code: {ExitCode}, Output: {Output}, Error: {Error}",
-                    process.ExitCode, output, error);
-                return true; // タスクが存在しない = 登録されていない = 目的達成
-            }
+
+            // レジストリから値を削除
+            key.DeleteValue(RegistryValueName, false);
+
+            _logger.LogInformation("Successfully unregistered from startup");
+            return Task.FromResult(true);
+        }
+        catch (ArgumentException)
+        {
+            // 値が存在しない場合
+            _logger.LogInformation("Registry value not found, already unregistered");
+            return Task.FromResult(true); // 既に登録解除済み
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogError(ex, "Access denied when unregistering from startup");
+            return Task.FromResult(false);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to unregister from startup");
-            return false;
+            return Task.FromResult(false);
         }
     }
 }

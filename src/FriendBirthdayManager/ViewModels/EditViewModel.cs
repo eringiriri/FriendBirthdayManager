@@ -138,6 +138,21 @@ public partial class EditViewModel : ObservableObject
                 return;
             }
 
+            // 名前の重複チェック（自分以外）
+            var trimmedName = Name.Trim();
+            var existingFriends = await _friendRepository.GetAllAsync();
+            if (existingFriends.Any(f => f.Id != _friendId && f.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)))
+            {
+                StatusMessage = $"エラー: 「{trimmedName}」は既に登録されています";
+                _logger.LogWarning("Duplicate friend name rejected in edit: {FriendName}", trimmedName);
+                System.Windows.MessageBox.Show(
+                    $"「{trimmedName}」は既に登録されています。\n別の名前を入力してください。",
+                    "入力エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
             // 誕生日のパース
             int? birthYear = null;
             int? birthMonth = null;
@@ -206,7 +221,7 @@ public partial class EditViewModel : ObservableObject
             }
 
             // 友人情報を更新
-            friend.Name = Name.Trim();
+            friend.Name = trimmedName;
             friend.BirthYear = birthYear;
             friend.BirthMonth = birthMonth;
             friend.BirthDay = birthDay;

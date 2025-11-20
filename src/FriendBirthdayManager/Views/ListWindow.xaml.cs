@@ -1,4 +1,3 @@
-using System.Windows;
 using FriendBirthdayManager.ViewModels;
 
 namespace FriendBirthdayManager.Views;
@@ -6,7 +5,7 @@ namespace FriendBirthdayManager.Views;
 /// <summary>
 /// Interaction logic for ListWindow.xaml
 /// </summary>
-public partial class ListWindow : Window
+public partial class ListWindow : BaseWindow
 {
     public ListWindow(ListViewModel viewModel)
     {

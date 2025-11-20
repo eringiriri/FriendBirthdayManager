@@ -1,8 +1,9 @@
-<Window x:Class="FriendBirthdayManager.Views.EditWindow"
+<local:BaseWindow x:Class="FriendBirthdayManager.Views.EditWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FriendBirthdayManager.Views"
         xmlns:vm="clr-namespace:FriendBirthdayManager.ViewModels"
         mc:Ignorable="d"
         Title="友人情報の編集 - Friend Birthday Manager"
@@ -10,10 +11,6 @@
         Width="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanMinimize">
-
-    <Window.DataContext>
-        <vm:EditViewModel/>
-    </Window.DataContext>
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -135,4 +132,4 @@
                     Click="CancelButton_Click"/>
         </StackPanel>
     </Grid>
-</Window>
+</local:BaseWindow>

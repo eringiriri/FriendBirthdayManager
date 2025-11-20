@@ -1,15 +1,16 @@
-<Window x:Class="FriendBirthdayManager.Views.MainWindow"
+<local:BaseWindow x:Class="FriendBirthdayManager.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FriendBirthdayManager.Views"
         xmlns:vm="clr-namespace:FriendBirthdayManager.ViewModels"
         mc:Ignorable="d"
         Title="友人の誕生日を追加 - Friend Birthday Manager"
-        Height="600"
+        Height="750"
         Width="500"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="CanMinimize">
+        ResizeMode="CanResize">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -124,23 +125,34 @@
         </StackPanel>
 
         <!-- 直近の誕生日 -->
-        <GroupBox Grid.Row="6" Header="📅 直近の誕生日（最大5件）" Padding="10">
-            <ListBox ItemsSource="{Binding UpcomingBirthdays}"
-                     BorderThickness="0"
-                     Background="Transparent">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Margin="0,5">
-                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14"/>
-                            <TextBlock>
-                                <Run Text="{Binding BirthdayDisplay}"/>
-                                <Run Text=" "/>
-                                <Run Text="{Binding DaysUntilDisplay}" Foreground="Green"/>
-                            </TextBlock>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+        <GroupBox Grid.Row="6" Header="📅 直近の誕生日" Padding="10" MinHeight="150">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding UpcomingBirthdays}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="LightGray"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="3,5,3,5"
+                                    Margin="0,2"
+                                    Cursor="Hand">
+                                <Border.InputBindings>
+                                    <MouseBinding Gesture="LeftDoubleClick"
+                                                  Command="{Binding DataContext.EditFriendCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  CommandParameter="{Binding}"/>
+                                </Border.InputBindings>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13"/>
+                                    <TextBlock FontSize="12" Margin="0,2,0,0">
+                                        <Run Text="{Binding BirthdayDisplay}"/>
+                                        <Run Text=" "/>
+                                        <Run Text="{Binding DaysUntilDisplay}" Foreground="Green"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
         </GroupBox>
 
         <!-- ステータスバー -->
@@ -150,4 +162,4 @@
             </StatusBarItem>
         </StatusBar>
     </Grid>
-</Window>
+</local:BaseWindow>

@@ -6,7 +6,7 @@ namespace FriendBirthdayManager.Views;
 /// <summary>
 /// Interaction logic for SettingsWindow.xaml
 /// </summary>
-public partial class SettingsWindow : Window
+public partial class SettingsWindow : BaseWindow
 {
     private readonly SettingsViewModel _viewModel;
 

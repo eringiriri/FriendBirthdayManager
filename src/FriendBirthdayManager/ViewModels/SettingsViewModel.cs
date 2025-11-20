@@ -191,22 +191,22 @@ public partial class SettingsViewModel : ObservableObject
                 }
 
                 _logger.LogWarning("CSV import completed with errors: {ErrorCount}", importResult.Errors.Count);
-                StatusMessage = $"CSV インポート完了（成功: {importResult.SuccessCount}件、失敗: {importResult.FailureCount}件）";
+                StatusMessage = $"CSV インポート完了（新規: {importResult.SuccessCount}件、更新: {importResult.UpdateCount}件、失敗: {importResult.FailureCount}件）";
 
                 // エラーメッセージをダイアログで表示
                 System.Windows.MessageBox.Show(
-                    $"インポート結果:\n\n成功: {importResult.SuccessCount}件\n失敗: {importResult.FailureCount}件\n\nエラー詳細:\n{errorMessage}",
+                    $"インポート結果:\n\n新規登録: {importResult.SuccessCount}件\n更新: {importResult.UpdateCount}件\n失敗: {importResult.FailureCount}件\n\nエラー詳細:\n{errorMessage}",
                     "CSV インポート結果",
                     System.Windows.MessageBoxButton.OK,
                     importResult.FailureCount > 0 ? System.Windows.MessageBoxImage.Warning : System.Windows.MessageBoxImage.Information);
             }
             else
             {
-                StatusMessage = $"CSV インポート完了: {importResult.SuccessCount}件";
-                _logger.LogInformation("CSV imported successfully: {Count} records", importResult.SuccessCount);
+                StatusMessage = $"CSV インポート完了: 新規 {importResult.SuccessCount}件、更新 {importResult.UpdateCount}件";
+                _logger.LogInformation("CSV imported successfully: {SuccessCount} new, {UpdateCount} updated", importResult.SuccessCount, importResult.UpdateCount);
 
                 System.Windows.MessageBox.Show(
-                    $"{importResult.SuccessCount}件のデータをインポートしました。",
+                    $"新規登録: {importResult.SuccessCount}件\n更新: {importResult.UpdateCount}件",
                     "CSV インポート完了",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Information);

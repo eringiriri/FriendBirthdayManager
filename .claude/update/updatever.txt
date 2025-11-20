@@ -1,0 +1,74 @@
+バージョン更新時に編集すべき場所
+====================================
+
+バージョンを更新する際は、以下のファイルを編集してください。
+
+1. FriendBirthdayManager.csproj
+   - ファイルパス: src/FriendBirthdayManager/FriendBirthdayManager.csproj
+   - 編集場所: <PropertyGroup> セクション内
+   - 追加・編集項目:
+     * <Version>1.0.0</Version> - NuGetパッケージバージョン（使用しない場合は省略可）
+     * <AssemblyVersion>1.0.0.0</AssemblyVersion> - アセンブリバージョン
+     * <FileVersion>1.0.0.0</FileVersion> - ファイルバージョン（Windowsのファイルプロパティに表示）
+     * <InformationalVersion>1.0.0</InformationalVersion> - 情報バージョン（表示用、セマンティックバージョン推奨）
+   
+   例:
+   <PropertyGroup>
+     <Version>1.0.0</Version>
+     <AssemblyVersion>1.0.0.0</AssemblyVersion>
+     <FileVersion>1.0.0.0</FileVersion>
+     <InformationalVersion>1.0.0</InformationalVersion>
+     <!-- 既存のプロパティ... -->
+   </PropertyGroup>
+
+2. AboutViewModel.cs
+   - ファイルパス: src/FriendBirthdayManager/ViewModels/AboutViewModel.cs
+   - 編集場所: 16行目付近の _version フィールドの初期値
+   - 編集内容:
+     * [ObservableProperty]
+     * private string _version = "1.0.0";  ← ここを更新
+   
+   ※ この値はAbout画面に表示されるバージョン文字列です
+
+3. README.md
+   - ファイルパス: README.md
+   - 編集場所: 「## バージョン履歴」セクション
+   - 編集内容:
+     * 新しいバージョンセクションを追加
+     * バージョン番号、リリース日、主な変更内容を記載
+   
+   例:
+   ### Version 1.1.0 (2025-XX-XX)
+   - 新機能: ○○機能を追加
+   - 改善: ○○の動作を改善
+   - 修正: ○○のバグを修正
+
+編集例（バージョン 1.1.0 に更新する場合）:
+----------------------------------------
+
+1. FriendBirthdayManager.csproj
+   <PropertyGroup>
+     <Version>1.1.0</Version>
+     <AssemblyVersion>1.1.0.0</AssemblyVersion>
+     <FileVersion>1.1.0.0</FileVersion>
+     <InformationalVersion>1.1.0</InformationalVersion>
+     <!-- 既存のプロパティ... -->
+   </PropertyGroup>
+
+2. AboutViewModel.cs
+   [ObservableProperty]
+   private string _version = "1.1.0";
+
+3. README.md
+   ### Version 1.1.0 (2025-XX-XX)
+   - 新機能: ○○機能を追加
+   - 改善: ○○の動作を改善
+   - 修正: ○○のバグを修正
+
+注意事項:
+--------
+- セマンティックバージョニング（MAJOR.MINOR.PATCH）を使用することを推奨
+- AssemblyVersion と FileVersion は 4桁（MAJOR.MINOR.PATCH.BUILD）の形式
+- InformationalVersion と AboutViewModel の _version はセマンティックバージョン（3桁）の形式を推奨
+- ビルド後、Windowsのファイルプロパティでバージョンが正しく表示されることを確認してください
+

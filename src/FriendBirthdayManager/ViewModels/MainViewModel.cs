@@ -84,10 +84,25 @@ public partial class MainViewModel : ObservableObject
                 return;
             }
 
+            // 名前の重複チェック
+            var trimmedName = Name.Trim();
+            var existingFriends = await _friendRepository.GetAllAsync();
+            if (existingFriends.Any(f => f.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)))
+            {
+                StatusMessage = $"エラー: 「{trimmedName}」は既に登録されています";
+                MessageBox.Show(
+                    $"「{trimmedName}」は既に登録されています。\n別の名前を入力してください。",
+                    "エラー",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                _logger.LogWarning("Duplicate friend name rejected: {FriendName}", trimmedName);
+                return;
+            }
+
             // 友人オブジェクトの作成
             var friend = new Friend
             {
-                Name = Name.Trim()
+                Name = trimmedName
             };
 
             // 誕生年のパース
@@ -206,14 +221,57 @@ public partial class MainViewModel : ObservableObject
         try
         {
             _logger.LogInformation("ShowList command executed");
-            var listWindow = _serviceProvider.GetRequiredService<Views.ListWindow>();
-            listWindow.Show();
-            listWindow.Activate();
+
+            var listWindow = Application.Current.Windows.OfType<Views.ListWindow>().FirstOrDefault();
+            if (listWindow == null)
+            {
+                listWindow = _serviceProvider.GetRequiredService<Views.ListWindow>();
+                listWindow.Show();
+            }
+            else
+            {
+                listWindow.Show();
+                listWindow.WindowState = WindowState.Normal;
+                listWindow.Activate();
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to show list window");
             MessageBox.Show("一覧画面の表示に失敗しました。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task EditFriend(UpcomingBirthdayItem friend)
+    {
+        try
+        {
+            _logger.LogInformation("Edit friend from upcoming list: {FriendId}", friend.Id);
+
+            // 既に同じ友人の編集ウィンドウが開いているかチェック
+            var existingWindow = Application.Current.Windows.OfType<Views.EditWindow>()
+                .FirstOrDefault(w => w.FriendId == friend.Id);
+            if (existingWindow != null)
+            {
+                existingWindow.Activate();
+                _logger.LogInformation("Edit window already open for friend: {FriendId}", friend.Id);
+                return;
+            }
+
+            var editWindow = _serviceProvider.GetRequiredService<Views.EditWindow>();
+
+            await editWindow.LoadFriendAsync(friend.Id);
+
+            editWindow.Show();
+            editWindow.Activate();
+
+            // 編集ウィンドウが閉じられたら直近の誕生日を再読み込み
+            editWindow.Closed += async (sender, args) => await LoadUpcomingBirthdaysAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to show edit window or load friend data: {FriendId}", friend.Id);
         }
     }
 
@@ -232,7 +290,7 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            var upcomingFriends = await _friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 5);
+            var upcomingFriends = await _friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, int.MaxValue);
 
             UpcomingBirthdays.Clear();
             foreach (var friend in upcomingFriends)
@@ -240,6 +298,7 @@ public partial class MainViewModel : ObservableObject
                 var daysUntil = friend.CalculateDaysUntilBirthday(DateTime.Now);
                 UpcomingBirthdays.Add(new UpcomingBirthdayItem
                 {
+                    Id = friend.Id,
                     Name = friend.Name,
                     BirthdayDisplay = friend.GetBirthdayDisplayString(),
                     DaysUntilDisplay = daysUntil.HasValue ? $"（あと {daysUntil.Value}日）" : string.Empty
@@ -269,6 +328,9 @@ public partial class AliasItem : ObservableObject
 /// </summary>
 public partial class UpcomingBirthdayItem : ObservableObject
 {
+    [ObservableProperty]
+    private int _id;
+
     [ObservableProperty]
     private string _name = string.Empty;
 

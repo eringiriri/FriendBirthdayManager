@@ -69,11 +69,17 @@ public class CsvService : ICsvService
     {
         var errors = new List<string>();
         var successCount = 0;
+        var updateCount = 0;
         var failureCount = 0;
 
         try
         {
             _logger.LogInformation("Importing friends from CSV: {FilePath}", filePath);
+
+            // 既存の友人一覧を取得（名前の重複チェック用）
+            var existingFriends = await _friendRepository.GetAllAsync();
+            var existingFriendsDict = existingFriends.ToDictionary(f => f.Name, StringComparer.OrdinalIgnoreCase);
+            _logger.LogInformation("Found {Count} existing friends", existingFriendsDict.Count);
 
             // ファイルサイズチェック（10MB以上は警告）
             var fileInfo = new FileInfo(filePath);
@@ -90,7 +96,7 @@ public class CsvService : ICsvService
             if (header == null)
             {
                 errors.Add("CSVファイルが空です");
-                return new ImportResult(0, 0, errors);
+                return new ImportResult(0, 0, 0, errors);
             }
 
             var lineNumber = 1;
@@ -114,32 +120,72 @@ public class CsvService : ICsvService
                         continue;
                     }
 
-                    // Friendオブジェクトを作成
-                    var friend = new Friend
-                    {
-                        Name = fields[0],
-                        BirthYear = ParseNullableInt(fields[1]),
-                        BirthMonth = ParseNullableInt(fields[2]),
-                        BirthDay = ParseNullableInt(fields[3]),
-                        Memo = fields[5],
-                        NotifyDaysBefore = ParseNullableInt(fields[6]),
-                        NotifyEnabled = fields[7] == "1",
-                        NotifySoundEnabled = fields[8] == "1" ? true : fields[8] == "0" ? false : null
-                    };
+                    // 既存の友人がいるかチェック
+                    var friendName = fields[0].Trim();
+                    Friend friend;
+                    bool isUpdate = false;
 
-                    // エイリアスをパース（"|"区切り）
+                    if (existingFriendsDict.TryGetValue(friendName, out var existingFriend))
+                    {
+                        // 既存の友人を更新
+                        friend = existingFriend;
+                        isUpdate = true;
+                        _logger.LogInformation("Updating existing friend: {FriendName} at line {LineNumber}", friendName, lineNumber);
+                    }
+                    else
+                    {
+                        // 新規友人を作成
+                        friend = new Friend { Name = friendName };
+                    }
+
+                    // CSVの値でマージ（CSVに値があれば上書き、なければ既存の値を保持）
+                    var birthYear = ParseNullableInt(fields[1]);
+                    if (birthYear.HasValue) friend.BirthYear = birthYear;
+
+                    var birthMonth = ParseNullableInt(fields[2]);
+                    if (birthMonth.HasValue) friend.BirthMonth = birthMonth;
+
+                    var birthDay = ParseNullableInt(fields[3]);
+                    if (birthDay.HasValue) friend.BirthDay = birthDay;
+
+                    if (!string.IsNullOrWhiteSpace(fields[5])) friend.Memo = fields[5];
+
+                    var notifyDaysBefore = ParseNullableInt(fields[6]);
+                    if (notifyDaysBefore.HasValue) friend.NotifyDaysBefore = notifyDaysBefore;
+
+                    if (!string.IsNullOrWhiteSpace(fields[7])) friend.NotifyEnabled = fields[7] == "1";
+
+                    if (!string.IsNullOrWhiteSpace(fields[8]))
+                        friend.NotifySoundEnabled = fields[8] == "1" ? true : fields[8] == "0" ? false : null;
+
+                    // エイリアスをマージ（重複しないように）
                     if (!string.IsNullOrWhiteSpace(fields[4]))
                     {
-                        var aliases = fields[4].Split('|', StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var alias in aliases)
+                        var newAliases = fields[4].Split('|', StringSplitOptions.RemoveEmptyEntries);
+                        var existingAliasNames = new HashSet<string>(friend.Aliases.Select(a => a.AliasName), StringComparer.OrdinalIgnoreCase);
+
+                        foreach (var alias in newAliases)
                         {
-                            friend.Aliases.Add(new Alias { AliasName = alias.Trim() });
+                            var aliasName = alias.Trim();
+                            if (!existingAliasNames.Contains(aliasName))
+                            {
+                                friend.Aliases.Add(new Alias { AliasName = aliasName });
+                            }
                         }
                     }
 
-                    // データベースに追加
-                    await _friendRepository.AddAsync(friend);
-                    successCount++;
+                    // データベースに追加または更新
+                    if (isUpdate)
+                    {
+                        await _friendRepository.UpdateAsync(friend);
+                        updateCount++;
+                    }
+                    else
+                    {
+                        await _friendRepository.AddAsync(friend);
+                        existingFriendsDict.Add(friendName, friend);
+                        successCount++;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -149,16 +195,16 @@ public class CsvService : ICsvService
                 }
             }
 
-            _logger.LogInformation("Import completed: {SuccessCount} success, {FailureCount} failure",
-                successCount, failureCount);
+            _logger.LogInformation("Import completed: {SuccessCount} new, {UpdateCount} updated, {FailureCount} failure",
+                successCount, updateCount, failureCount);
 
-            return new ImportResult(successCount, failureCount, errors);
+            return new ImportResult(successCount, updateCount, failureCount, errors);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to import CSV from {FilePath}", filePath);
             errors.Add($"ファイル読み込みエラー: {ex.Message}");
-            return new ImportResult(successCount, failureCount, errors);
+            return new ImportResult(successCount, updateCount, failureCount, errors);
         }
     }
 
