@@ -115,7 +115,7 @@ public partial class ListViewModel : ObservableObject
     {
         try
         {
-            IEnumerable<Friend> sortedFriends = _sortIndex switch
+            IEnumerable<Friend> sortedFriends = SortIndex switch
             {
                 0 => SortByNearestBirthday(_allFriends), // 近い順
                 1 => SortByBirthdayDate(_allFriends),    // 日付順（1月1日→12月31日）
@@ -137,7 +137,7 @@ public partial class ListViewModel : ObservableObject
                 });
             }
 
-            _logger.LogInformation("Applied sort: {SortIndex}", _sortIndex);
+            _logger.LogInformation("Applied sort: {SortIndex}", SortIndex);
         }
         catch (Exception ex)
         {
