@@ -253,9 +253,9 @@ public partial class ListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SearchAsync()
+    private void ClearSearch()
     {
-        await LoadFriendsAsync();
+        SearchKeyword = string.Empty;
     }
 
     [RelayCommand]
