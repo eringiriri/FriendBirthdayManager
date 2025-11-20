@@ -75,6 +75,11 @@ public class CsvService : ICsvService
         {
             _logger.LogInformation("Importing friends from CSV: {FilePath}", filePath);
 
+            // 既存の友人一覧を取得（名前の重複チェック用）
+            var existingFriends = await _friendRepository.GetAllAsync();
+            var existingNames = new HashSet<string>(existingFriends.Select(f => f.Name), StringComparer.OrdinalIgnoreCase);
+            _logger.LogInformation("Found {Count} existing friends", existingNames.Count);
+
             // ファイルサイズチェック（10MB以上は警告）
             var fileInfo = new FileInfo(filePath);
             if (fileInfo.Length > 10 * 1024 * 1024)
@@ -114,10 +119,20 @@ public class CsvService : ICsvService
                         continue;
                     }
 
+                    // 名前の重複チェック
+                    var friendName = fields[0].Trim();
+                    if (existingNames.Contains(friendName))
+                    {
+                        errors.Add($"行 {lineNumber}: 「{friendName}」は既に登録されています（スキップ）");
+                        failureCount++;
+                        _logger.LogWarning("Skipping duplicate friend name: {FriendName} at line {LineNumber}", friendName, lineNumber);
+                        continue;
+                    }
+
                     // Friendオブジェクトを作成
                     var friend = new Friend
                     {
-                        Name = fields[0],
+                        Name = friendName,
                         BirthYear = ParseNullableInt(fields[1]),
                         BirthMonth = ParseNullableInt(fields[2]),
                         BirthDay = ParseNullableInt(fields[3]),
@@ -139,6 +154,10 @@ public class CsvService : ICsvService
 
                     // データベースに追加
                     await _friendRepository.AddAsync(friend);
+
+                    // 追加成功したら既存名前リストに追加（同一CSVファイル内の重複もチェック）
+                    existingNames.Add(friendName);
+
                     successCount++;
                 }
                 catch (Exception ex)
