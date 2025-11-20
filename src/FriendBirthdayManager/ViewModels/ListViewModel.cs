@@ -259,6 +259,83 @@ public partial class ListViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ImportCsv()
+    {
+        try
+        {
+            _logger.LogInformation("Import CSV requested");
+
+            // ファイル選択ダイアログを表示
+            var dialog = new OpenFileDialog
+            {
+                Filter = "CSV ファイル (*.csv)|*.csv|すべてのファイル (*.*)|*.*",
+                DefaultExt = "csv",
+                Title = "CSVファイルのインポート"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                _logger.LogInformation("CSV import cancelled by user");
+                return;
+            }
+
+            StatusMessage = "インポート中...";
+
+            // CSVインポート実行
+            var result = await _csvService.ImportAsync(dialog.FileName);
+
+            // 結果メッセージの作成
+            var messageLines = new List<string>();
+            messageLines.Add($"成功: {result.SuccessCount}件");
+            messageLines.Add($"失敗: {result.FailureCount}件");
+
+            if (result.Errors.Count > 0)
+            {
+                messageLines.Add("");
+                messageLines.Add("エラー詳細:");
+                // 最初の10件のエラーのみ表示
+                foreach (var error in result.Errors.Take(10))
+                {
+                    messageLines.Add($"- {error}");
+                }
+                if (result.Errors.Count > 10)
+                {
+                    messageLines.Add($"... 他 {result.Errors.Count - 10} 件");
+                }
+            }
+
+            StatusMessage = $"インポート完了: 成功 {result.SuccessCount}件, 失敗 {result.FailureCount}件";
+
+            // 結果ダイアログを表示
+            var messageType = result.FailureCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information;
+            MessageBox.Show(
+                string.Join("\n", messageLines),
+                "インポート完了",
+                MessageBoxButton.OK,
+                messageType);
+
+            _logger.LogInformation("CSV import completed: Success={SuccessCount}, Failure={FailureCount}",
+                result.SuccessCount, result.FailureCount);
+
+            // 成功件数が1件以上ある場合はリストを再読み込み
+            if (result.SuccessCount > 0)
+            {
+                await LoadFriendsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to import CSV");
+            StatusMessage = "エラー: CSVインポートに失敗しました";
+            MessageBox.Show(
+                $"CSVファイルのインポートに失敗しました: {ex.Message}",
+                "エラー",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
     private async Task ExportCsv()
     {
         try

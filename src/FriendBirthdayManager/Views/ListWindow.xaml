@@ -33,6 +33,10 @@
                 <ComboBoxItem Content="日付順"/>
                 <ComboBoxItem Content="名前順"/>
             </ComboBox>
+            <Button Content="インポート"
+                    Command="{Binding ImportCsvCommand}"
+                    Width="100"
+                    Margin="0,0,10,0"/>
             <Button Content="エクスポート"
                     Command="{Binding ExportCsvCommand}"
                     Width="100"/>
