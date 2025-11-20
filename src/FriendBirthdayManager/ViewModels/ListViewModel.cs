@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FriendBirthdayManager.Data;
@@ -201,6 +202,47 @@ public partial class ListViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to show edit window or load friend data: {FriendId}", friend.Id);
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteFriend(FriendListItem friend)
+    {
+        try
+        {
+            // 削除確認ダイアログを表示
+            var result = MessageBox.Show(
+                $"「{friend.Name}」を削除してもよろしいですか？\n\nこの操作は取り消せません。",
+                "削除確認",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                _logger.LogInformation("Friend deletion cancelled by user: {FriendId}", friend.Id);
+                return;
+            }
+
+            // 削除実行
+            _logger.LogInformation("Deleting friend: {FriendId} ({FriendName})", friend.Id, friend.Name);
+            await _friendRepository.DeleteAsync(friend.Id);
+
+            StatusMessage = $"「{friend.Name}」を削除しました";
+            _logger.LogInformation("Friend deleted successfully: {FriendId}", friend.Id);
+
+            // リストを再読み込み
+            await LoadFriendsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete friend: {FriendId}", friend.Id);
+            StatusMessage = "エラー: 友人の削除に失敗しました";
+            MessageBox.Show(
+                $"友人の削除に失敗しました: {ex.Message}",
+                "エラー",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
