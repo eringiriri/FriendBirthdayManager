@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -81,31 +82,35 @@ public class TrayIconService : ITrayIconService, IDisposable
             Application.Current.Dispatcher.Invoke(() =>
             {
                 string iconFileName = GetIconFileName(daysUntilNextBirthday);
-                // WPFリソースとして埋め込まれたアイコンを読み込む（pack URI）
-                string iconUri = $"pack://application:,,,/Resources/Icons/{iconFileName}";
+                // 埋め込みリソースからアイコンを読み込む
+                string resourceName = $"FriendBirthdayManager.Resources.Icons.{iconFileName}";
 
                 try
                 {
-                    var streamResourceInfo = Application.GetResourceStream(new Uri(iconUri, UriKind.Absolute));
-                    if (streamResourceInfo != null)
+                    var assembly = Assembly.GetExecutingAssembly();
+                    using (var stream = assembly.GetManifestResourceStream(resourceName))
                     {
-                        using (var stream = streamResourceInfo.Stream)
+                        if (stream != null)
                         {
                             var icon = new Icon(stream);
                             _taskbarIcon.Icon = icon;
+
+                            string tooltip = daysUntilNextBirthday.HasValue
+                                ? $"Friend Birthday Manager - あと{daysUntilNextBirthday.Value}日"
+                                : "Friend Birthday Manager";
+                            _taskbarIcon.ToolTipText = tooltip;
+
+                            _logger.LogInformation("Tray icon updated: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Icon resource not found: {ResourceName}", resourceName);
                         }
                     }
-
-                    string tooltip = daysUntilNextBirthday.HasValue
-                        ? $"Friend Birthday Manager - あと{daysUntilNextBirthday.Value}日"
-                        : "Friend Birthday Manager";
-                    _taskbarIcon.ToolTipText = tooltip;
-
-                    _logger.LogInformation("Tray icon updated: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to load icon resource: {IconUri}", iconUri);
+                    _logger.LogWarning(ex, "Failed to load icon resource: {ResourceName}", resourceName);
                 }
             });
         }
