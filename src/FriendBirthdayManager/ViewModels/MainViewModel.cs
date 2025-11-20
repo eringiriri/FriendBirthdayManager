@@ -84,10 +84,25 @@ public partial class MainViewModel : ObservableObject
                 return;
             }
 
+            // 名前の重複チェック
+            var trimmedName = Name.Trim();
+            var existingFriends = await _friendRepository.GetAllAsync();
+            if (existingFriends.Any(f => f.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)))
+            {
+                StatusMessage = $"エラー: 「{trimmedName}」は既に登録されています";
+                MessageBox.Show(
+                    $"「{trimmedName}」は既に登録されています。\n別の名前を入力してください。",
+                    "エラー",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                _logger.LogWarning("Duplicate friend name rejected: {FriendName}", trimmedName);
+                return;
+            }
+
             // 友人オブジェクトの作成
             var friend = new Friend
             {
-                Name = Name.Trim()
+                Name = trimmedName
             };
 
             // 誕生年のパース
