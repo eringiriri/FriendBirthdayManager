@@ -71,10 +71,12 @@
     <sys:String x:Key="ButtonImportCsv">CSVをインポート</sys:String>
     <sys:String x:Key="ButtonBackupDatabase">データベースをバックアップ</sys:String>
     <sys:String x:Key="HintImportCsv">※ インポートは本ツール出力CSV限定</sys:String>
-    <sys:String x:Key="LabelLanguage">言語:</sys:String>
+    <sys:String x:Key="LabelLanguage">Languages:</sys:String>
     <sys:String x:Key="LanguageJapanese">日本語</sys:String>
     <sys:String x:Key="LanguageEnglish">English</sys:String>
     <sys:String x:Key="LanguageKorean">한국어</sys:String>
+    <sys:String x:Key="LanguageTraditionalChinese">繁體中文</sys:String>
+    <sys:String x:Key="LanguageSpanish">Español</sys:String>
     <sys:String x:Key="LabelDatabasePath">データベースパス:</sys:String>
     <sys:String x:Key="LabelLogPath">ログファイルパス:</sys:String>
 
