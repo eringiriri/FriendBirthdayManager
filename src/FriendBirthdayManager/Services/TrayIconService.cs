@@ -15,6 +15,7 @@ namespace FriendBirthdayManager.Services;
 public class TrayIconService : ITrayIconService, IDisposable
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILocalizationService _localizationService;
     private readonly ILogger<TrayIconService> _logger;
     private TaskbarIcon? _taskbarIcon;
     private Icon? _currentIcon;
@@ -22,9 +23,10 @@ public class TrayIconService : ITrayIconService, IDisposable
     private bool _isIconInitialized;
     private int? _currentDaysUntil;
 
-    public TrayIconService(IServiceProvider serviceProvider, ILogger<TrayIconService> logger)
+    public TrayIconService(IServiceProvider serviceProvider, ILocalizationService localizationService, ILogger<TrayIconService> logger)
     {
         _serviceProvider = serviceProvider;
+        _localizationService = localizationService;
         _logger = logger;
     }
 
@@ -106,8 +108,8 @@ public class TrayIconService : ITrayIconService, IDisposable
                             _taskbarIcon.Icon = _currentIcon;
 
                             string tooltip = daysUntilNextBirthday.HasValue
-                                ? $"Friend Birthday Manager - あと{daysUntilNextBirthday.Value}日"
-                                : "Friend Birthday Manager";
+                                ? string.Format(_localizationService.GetString("TrayTooltipDaysUntil"), daysUntilNextBirthday.Value)
+                                : _localizationService.GetString("TrayTooltipDefault");
                             _taskbarIcon.ToolTipText = tooltip;
 
                             _logger.LogInformation("Tray icon updated: {IconFileName}, Days: {Days}", iconFileName, daysUntilNextBirthday);
@@ -158,31 +160,31 @@ public class TrayIconService : ITrayIconService, IDisposable
         var contextMenu = new ContextMenu();
 
         // 誕生日を追加
-        var addMenuItem = new MenuItem { Header = "誕生日を追加 (_A)" };
+        var addMenuItem = new MenuItem { Header = _localizationService.GetString("TrayMenuAddBirthday") };
         addMenuItem.Click += (s, e) => ShowMainWindow();
         contextMenu.Items.Add(addMenuItem);
 
         // 一覧表示
-        var listMenuItem = new MenuItem { Header = "一覧表示 (_L)" };
+        var listMenuItem = new MenuItem { Header = _localizationService.GetString("TrayMenuShowList") };
         listMenuItem.Click += (s, e) => ShowListWindow();
         contextMenu.Items.Add(listMenuItem);
 
         contextMenu.Items.Add(new Separator());
 
         // 設定
-        var settingsMenuItem = new MenuItem { Header = "設定 (_S)" };
+        var settingsMenuItem = new MenuItem { Header = _localizationService.GetString("TrayMenuSettings") };
         settingsMenuItem.Click += (s, e) => ShowSettingsWindow();
         contextMenu.Items.Add(settingsMenuItem);
 
         // クレジット
-        var aboutMenuItem = new MenuItem { Header = "クレジット (_C)" };
+        var aboutMenuItem = new MenuItem { Header = _localizationService.GetString("TrayMenuCredits") };
         aboutMenuItem.Click += (s, e) => ShowAboutDialog();
         contextMenu.Items.Add(aboutMenuItem);
 
         contextMenu.Items.Add(new Separator());
 
         // 終了
-        var exitMenuItem = new MenuItem { Header = "終了 (_X)" };
+        var exitMenuItem = new MenuItem { Header = _localizationService.GetString("TrayMenuExit") };
         exitMenuItem.Click += (s, e) => ExitApplication();
         contextMenu.Items.Add(exitMenuItem);
 

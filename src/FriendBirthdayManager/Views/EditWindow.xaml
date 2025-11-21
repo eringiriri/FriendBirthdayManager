@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:FriendBirthdayManager.Views"
         xmlns:vm="clr-namespace:FriendBirthdayManager.ViewModels"
         mc:Ignorable="d"
-        Title="友人情報の編集 - Friend Birthday Manager"
+        Title="{DynamicResource EditWindowTitle}"
         Height="650"
         Width="500"
         WindowStartupLocation="CenterScreen"
@@ -24,7 +24,7 @@
 
         <!-- 名前入力 -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBlock Text="名前: *必須" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelName}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
                      MaxLength="200"
                      FontSize="14"/>
@@ -32,7 +32,7 @@
 
         <!-- 誕生日入力 -->
         <StackPanel Grid.Row="1" Margin="0,0,0,15">
-            <TextBlock Text="誕生日:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelBirthday}" FontWeight="Bold" Margin="0,0,0,5"/>
             <StackPanel Orientation="Horizontal">
                 <TextBox Text="{Binding BirthYear, UpdateSourceTrigger=PropertyChanged}"
                          Width="80"
@@ -52,7 +52,7 @@
         </StackPanel>
 
         <!-- エイリアス入力 -->
-        <GroupBox Grid.Row="2" Header="エイリアス" Margin="0,0,0,15" Padding="10">
+        <GroupBox Grid.Row="2" Header="{DynamicResource GroupAlias}" Margin="0,0,0,15" Padding="10">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Aliases}">
                     <ItemsControl.ItemTemplate>
@@ -61,7 +61,7 @@
                                 <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                          Width="300"
                                          MaxLength="50"/>
-                                <Button Content="削除"
+                                <Button Content="{DynamicResource ButtonDelete}"
                                         Command="{Binding DataContext.RemoveAliasCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="{Binding}"
                                         Margin="10,0,0,0"
@@ -70,7 +70,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button Content="+ エイリアスを追加"
+                <Button Content="{DynamicResource ButtonAddAlias}"
                         Command="{Binding AddAliasCommand}"
                         HorizontalAlignment="Left"
                         Margin="0,5,0,0"/>
@@ -79,7 +79,7 @@
 
         <!-- メモ入力 -->
         <StackPanel Grid.Row="3" Margin="0,0,0,15">
-            <TextBlock Text="メモ:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelMemo}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Memo, UpdateSourceTrigger=PropertyChanged}"
                      Height="100"
                      MaxLength="5000"
@@ -89,43 +89,43 @@
         </StackPanel>
 
         <!-- 通知設定 -->
-        <GroupBox Grid.Row="4" Header="通知設定" Margin="0,0,0,15" Padding="10">
+        <GroupBox Grid.Row="4" Header="{DynamicResource GroupNotificationSettings}" Margin="0,0,0,15" Padding="10">
             <StackPanel>
-                <CheckBox Content="通知を有効にする" IsChecked="{Binding NotifyEnabled}" Margin="0,0,0,10"/>
+                <CheckBox Content="{DynamicResource CheckboxEnableNotification}" IsChecked="{Binding NotifyEnabled}" Margin="0,0,0,10"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <TextBlock Text="通知タイミング:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="{DynamicResource LabelNotificationTiming}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <ComboBox SelectedIndex="{Binding NotifyDaysBeforeIndex}" Width="150">
-                        <ComboBoxItem Content="デフォルト設定を使用"/>
-                        <ComboBoxItem Content="通知なし"/>
-                        <ComboBoxItem Content="1日前から"/>
-                        <ComboBoxItem Content="2日前から"/>
-                        <ComboBoxItem Content="3日前から"/>
-                        <ComboBoxItem Content="5日前から"/>
-                        <ComboBoxItem Content="7日前から"/>
-                        <ComboBoxItem Content="14日前から"/>
-                        <ComboBoxItem Content="30日前から"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDefault}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyNone}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDays1}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDays2}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDays3}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDays5}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDays7}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDays14}"/>
+                        <ComboBoxItem Content="{DynamicResource NotifyDays30}"/>
                     </ComboBox>
                 </StackPanel>
-                <CheckBox Content="音を鳴らす" IsChecked="{Binding NotifySoundEnabled}"/>
+                <CheckBox Content="{DynamicResource CheckboxEnableSound}" IsChecked="{Binding NotifySoundEnabled}"/>
             </StackPanel>
         </GroupBox>
 
         <!-- ボタン -->
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Content="保存"
+            <Button Content="{DynamicResource ButtonSave}"
                     Command="{Binding SaveCommand}"
                     Width="100"
                     Height="35"
                     FontSize="14"
                     Margin="0,0,10,0"/>
-            <Button Content="削除"
+            <Button Content="{DynamicResource ButtonDelete}"
                     Command="{Binding DeleteCommand}"
                     Width="100"
                     Height="35"
                     FontSize="14"
                     Margin="0,0,10,0"
                     Background="#FFCCAA"/>
-            <Button Content="キャンセル"
+            <Button Content="{DynamicResource ButtonCancel}"
                     Width="100"
                     Height="35"
                     FontSize="14"

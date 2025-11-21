@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:FriendBirthdayManager.Views"
         xmlns:vm="clr-namespace:FriendBirthdayManager.ViewModels"
         mc:Ignorable="d"
-        Title="友人の誕生日を追加 - Friend Birthday Manager"
+        Title="{DynamicResource MainWindowTitle}"
         Height="750"
         Width="500"
         WindowStartupLocation="CenterScreen"
@@ -26,7 +26,7 @@
 
         <!-- 名前入力 -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBlock Text="名前: *必須" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelName}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
                      MaxLength="200"
                      FontSize="14"/>
@@ -34,7 +34,7 @@
 
         <!-- 誕生日入力 -->
         <StackPanel Grid.Row="1" Margin="0,0,0,15">
-            <TextBlock Text="誕生日:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelBirthday}" FontWeight="Bold" Margin="0,0,0,5"/>
             <StackPanel Orientation="Horizontal">
                 <TextBox Text="{Binding BirthYear, UpdateSourceTrigger=PropertyChanged}"
                          Width="80"
@@ -51,7 +51,7 @@
                          MaxLength="2"
                          VerticalContentAlignment="Center"/>
             </StackPanel>
-            <TextBlock Text="※ 月と日の両方を入力すると通知対象になります"
+            <TextBlock Text="{DynamicResource HintBirthdayRequired}"
                        FontSize="10"
                        Foreground="Gray"
                        Margin="0,5,0,0"/>
@@ -59,7 +59,7 @@
 
         <!-- エイリアス入力 -->
         <StackPanel Grid.Row="2" Margin="0,0,0,15">
-            <TextBlock Text="エイリアス:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelAlias}" FontWeight="Bold" Margin="0,0,0,5"/>
             <ItemsControl ItemsSource="{Binding Aliases}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -67,7 +67,7 @@
                             <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                      Width="350"
                                      MaxLength="50"/>
-                            <Button Content="削除"
+                            <Button Content="{DynamicResource ButtonDelete}"
                                     Command="{Binding DataContext.RemoveAliasCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
                                     Margin="10,0,0,0"
@@ -76,7 +76,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Button Content="+ エイリアスを追加"
+            <Button Content="{DynamicResource ButtonAddAlias}"
                     Command="{Binding AddAliasCommand}"
                     HorizontalAlignment="Left"
                     Margin="0,5,0,0"/>
@@ -84,7 +84,7 @@
 
         <!-- メモ入力 -->
         <StackPanel Grid.Row="3" Margin="0,0,0,15">
-            <TextBlock Text="メモ:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelMemo}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Memo, UpdateSourceTrigger=PropertyChanged}"
                      Height="80"
                      MaxLength="5000"
@@ -95,29 +95,29 @@
 
         <!-- 通知設定 -->
         <StackPanel Grid.Row="4" Margin="0,0,0,15">
-            <TextBlock Text="通知設定:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelNotificationSettings}" FontWeight="Bold" Margin="0,0,0,5"/>
             <ComboBox SelectedIndex="{Binding NotifyDaysBeforeIndex}" Width="200" HorizontalAlignment="Left">
-                <ComboBoxItem Content="デフォルト設定を使用"/>
-                <ComboBoxItem Content="通知なし"/>
-                <ComboBoxItem Content="1日前から"/>
-                <ComboBoxItem Content="2日前から"/>
-                <ComboBoxItem Content="3日前から"/>
-                <ComboBoxItem Content="5日前から"/>
-                <ComboBoxItem Content="7日前から"/>
-                <ComboBoxItem Content="14日前から"/>
-                <ComboBoxItem Content="30日前から"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDefault}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyNone}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDays1}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDays2}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDays3}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDays5}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDays7}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDays14}"/>
+                <ComboBoxItem Content="{DynamicResource NotifyDays30}"/>
             </ComboBox>
         </StackPanel>
 
         <!-- ボタン -->
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
-            <Button Content="登録"
+            <Button Content="{DynamicResource ButtonRegister}"
                     Command="{Binding SaveCommand}"
                     Width="100"
                     Height="35"
                     FontSize="14"
                     Margin="0,0,10,0"/>
-            <Button Content="一覧表示"
+            <Button Content="{DynamicResource ButtonShowList}"
                     Command="{Binding ShowListCommand}"
                     Width="100"
                     Height="35"
@@ -125,7 +125,7 @@
         </StackPanel>
 
         <!-- 直近の誕生日 -->
-        <GroupBox Grid.Row="6" Header="📅 直近の誕生日" Padding="10" MinHeight="150">
+        <GroupBox Grid.Row="6" Header="{DynamicResource GroupUpcomingBirthdays}" Padding="10" MinHeight="150">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding UpcomingBirthdays}">
                     <ItemsControl.ItemTemplate>
