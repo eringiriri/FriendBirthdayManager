@@ -71,7 +71,7 @@
     <sys:String x:Key="ButtonImportCsv">匯入 CSV</sys:String>
     <sys:String x:Key="ButtonBackupDatabase">備份資料庫</sys:String>
     <sys:String x:Key="HintImportCsv">※ 僅支援本工具匯出的 CSV</sys:String>
-    <sys:String x:Key="LabelLanguage">語言:</sys:String>
+    <sys:String x:Key="LabelLanguage">Languages:</sys:String>
     <sys:String x:Key="LanguageJapanese">日本語</sys:String>
     <sys:String x:Key="LanguageEnglish">English</sys:String>
     <sys:String x:Key="LanguageKorean">한국어</sys:String>
