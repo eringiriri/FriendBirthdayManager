@@ -21,6 +21,7 @@ public partial class App : Application
     private ITrayIconService? _trayIconService;
     private INotificationService? _notificationService;
     private static Mutex? _mutex;
+    private System.Threading.Timer? _hourlyUpdateTimer;
     private const string MutexName = "FriendBirthdayManager_SingleInstance";
 
     /// <summary>
@@ -82,6 +83,9 @@ public partial class App : Application
             _notificationService = _serviceProvider.GetRequiredService<INotificationService>();
             _notificationService.Start();
 
+            // 毎時00分にアイコン更新するタイマーを開始
+            StartHourlyUpdateTimer();
+
             // メインウィンドウは表示せず、タスクトレイのみ常駐
             // ※ ユーザーがタスクトレイから「誕生日を追加」を選択したときに表示される
 
@@ -102,6 +106,9 @@ public partial class App : Application
 
         // 通知サービスの停止
         _notificationService?.Stop();
+
+        // 毎時更新タイマーの停止
+        _hourlyUpdateTimer?.Dispose();
 
         // タスクトレイサービスのクリーンアップ
         _trayIconService?.Dispose();
@@ -286,6 +293,35 @@ public partial class App : Application
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to update tray icon");
+        }
+    }
+
+    private void StartHourlyUpdateTimer()
+    {
+        try
+        {
+            var now = DateTime.Now;
+
+            // 次の00分までの時間を計算
+            var nextHour = now.Date.AddHours(now.Hour + 1);
+            var dueTime = nextHour - now;
+
+            Log.Information("Hourly update timer starting. First update at: {NextUpdate}", nextHour);
+
+            // 毎時00分に実行するタイマーを設定
+            _hourlyUpdateTimer = new System.Threading.Timer(
+                async _ =>
+                {
+                    Log.Information("Hourly tray icon update triggered");
+                    await UpdateTrayIconAsync();
+                },
+                null,
+                dueTime,
+                TimeSpan.FromHours(1));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to start hourly update timer");
         }
     }
 }
