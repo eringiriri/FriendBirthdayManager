@@ -212,6 +212,9 @@ public partial class MainViewModel : ObservableObject
 
             // 直近の誕生日を再読み込み
             await LoadUpcomingBirthdaysAsync();
+
+            // タスクトレイアイコンを更新
+            await UpdateTrayIconAsync();
         }
         catch (Exception ex)
         {
@@ -316,6 +319,38 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load upcoming birthdays");
+        }
+    }
+
+    private async Task UpdateTrayIconAsync()
+    {
+        try
+        {
+            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
+            if (trayIconService == null)
+            {
+                _logger.LogWarning("ITrayIconService not found");
+                return;
+            }
+
+            // 直近の誕生日を取得
+            var upcomingFriends = await _friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
+            var nextFriend = upcomingFriends.FirstOrDefault();
+
+            int? daysUntil = null;
+            if (nextFriend != null)
+            {
+                daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
+            }
+
+            // タスクトレイアイコンを更新
+            trayIconService.UpdateIcon(daysUntil);
+
+            _logger.LogInformation("Tray icon updated from MainViewModel: Days until next birthday = {Days}", daysUntil);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update tray icon");
         }
     }
 }

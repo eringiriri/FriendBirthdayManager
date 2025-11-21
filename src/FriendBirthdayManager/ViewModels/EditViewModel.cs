@@ -15,6 +15,7 @@ public partial class EditViewModel : ObservableObject
 {
     private readonly IFriendRepository _friendRepository;
     private readonly ILocalizationService _localizationService;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<EditViewModel> _logger;
     private int? _friendId;
 
@@ -51,10 +52,12 @@ public partial class EditViewModel : ObservableObject
     public EditViewModel(
         IFriendRepository friendRepository,
         ILocalizationService localizationService,
+        IServiceProvider serviceProvider,
         ILogger<EditViewModel> logger)
     {
         _friendRepository = friendRepository;
         _localizationService = localizationService;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -271,6 +274,9 @@ public partial class EditViewModel : ObservableObject
             StatusMessage = _localizationService.GetString("MessageFriendSaved");
             _logger.LogInformation("Friend saved successfully: {FriendName} (ID: {FriendId})", friend.Name, friend.Id);
 
+            // タスクトレイアイコンを更新
+            await UpdateTrayIconAsync();
+
             System.Windows.MessageBox.Show(
                 "保存しました。",
                 "保存完了",
@@ -331,6 +337,9 @@ public partial class EditViewModel : ObservableObject
             _logger.LogInformation("Friend deleted successfully: {FriendId}", _friendId);
             StatusMessage = _localizationService.GetString("MessageFriendDeleted");
 
+            // タスクトレイアイコンを更新
+            await UpdateTrayIconAsync();
+
             // ウィンドウを閉じる
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
@@ -349,6 +358,38 @@ public partial class EditViewModel : ObservableObject
                 "エラー",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    private async Task UpdateTrayIconAsync()
+    {
+        try
+        {
+            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
+            if (trayIconService == null)
+            {
+                _logger.LogWarning("ITrayIconService not found");
+                return;
+            }
+
+            // 直近の誕生日を取得
+            var upcomingFriends = await _friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
+            var nextFriend = upcomingFriends.FirstOrDefault();
+
+            int? daysUntil = null;
+            if (nextFriend != null)
+            {
+                daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
+            }
+
+            // タスクトレイアイコンを更新
+            trayIconService.UpdateIcon(daysUntil);
+
+            _logger.LogInformation("Tray icon updated from EditViewModel: Days until next birthday = {Days}", daysUntil);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update tray icon");
         }
     }
 }
