@@ -105,6 +105,12 @@ public class LocalizationService : ILocalizationService
             {
                 return "ko-KR";
             }
+            else if (languageName.StartsWith("zh-TW", StringComparison.OrdinalIgnoreCase) ||
+                     languageName.StartsWith("zh-HK", StringComparison.OrdinalIgnoreCase) ||
+                     languageName.StartsWith("zh-Hant", StringComparison.OrdinalIgnoreCase))
+            {
+                return "zh-TW";
+            }
             else if (languageName.StartsWith("en", StringComparison.OrdinalIgnoreCase))
             {
                 return "en-US";
@@ -123,7 +129,7 @@ public class LocalizationService : ILocalizationService
 
     private bool IsValidLanguage(string languageCode)
     {
-        var validLanguages = new[] { "ja-JP", "en-US", "ko-KR" };
+        var validLanguages = new[] { "ja-JP", "en-US", "ko-KR", "zh-TW" };
         return validLanguages.Contains(languageCode);
     }
 }

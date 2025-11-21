@@ -1,0 +1,165 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Common -->
+    <sys:String x:Key="AppName">Friend Birthday Manager</sys:String>
+    <sys:String x:Key="ButtonSave">儲存</sys:String>
+    <sys:String x:Key="ButtonClose">關閉</sys:String>
+    <sys:String x:Key="ButtonCancel">取消</sys:String>
+    <sys:String x:Key="ButtonDelete">刪除</sys:String>
+    <sys:String x:Key="ButtonEdit">編輯</sys:String>
+    <sys:String x:Key="ButtonRegister">註冊</sys:String>
+
+    <!-- MainWindow -->
+    <sys:String x:Key="MainWindowTitle">新增朋友生日 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="LabelName">姓名: *必填</sys:String>
+    <sys:String x:Key="LabelBirthday">生日:</sys:String>
+    <sys:String x:Key="LabelAlias">別名:</sys:String>
+    <sys:String x:Key="LabelMemo">備註:</sys:String>
+    <sys:String x:Key="LabelNotificationSettings">通知設定:</sys:String>
+    <sys:String x:Key="ButtonAddAlias">+ 新增別名</sys:String>
+    <sys:String x:Key="ButtonShowList">顯示清單</sys:String>
+    <sys:String x:Key="GroupUpcomingBirthdays">📅 即將到來的生日</sys:String>
+    <sys:String x:Key="HintBirthdayRequired">※ 輸入月份和日期後將成為通知對象</sys:String>
+
+    <!-- NotificationSettings -->
+    <sys:String x:Key="NotifyDefault">使用預設設定</sys:String>
+    <sys:String x:Key="NotifyNone">不通知</sys:String>
+    <sys:String x:Key="NotifyDays1">提前1天</sys:String>
+    <sys:String x:Key="NotifyDays2">提前2天</sys:String>
+    <sys:String x:Key="NotifyDays3">提前3天</sys:String>
+    <sys:String x:Key="NotifyDays5">提前5天</sys:String>
+    <sys:String x:Key="NotifyDays7">提前7天</sys:String>
+    <sys:String x:Key="NotifyDays14">提前14天</sys:String>
+    <sys:String x:Key="NotifyDays30">提前30天</sys:String>
+
+    <!-- ListWindow -->
+    <sys:String x:Key="ListWindowTitle">朋友清單 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="ButtonImport">匯入</sys:String>
+    <sys:String x:Key="ButtonExport">匯出</sys:String>
+    <sys:String x:Key="SortByNearest">依距離排序</sys:String>
+    <sys:String x:Key="SortByDate">依日期排序</sys:String>
+    <sys:String x:Key="SortByName">依姓名排序</sys:String>
+    <sys:String x:Key="ColumnName">姓名</sys:String>
+    <sys:String x:Key="ColumnBirthday">生日</sys:String>
+    <sys:String x:Key="ColumnDaysUntil">剩餘</sys:String>
+    <sys:String x:Key="ColumnNotification">通知</sys:String>
+
+    <!-- EditWindow -->
+    <sys:String x:Key="EditWindowTitle">編輯朋友資訊 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="GroupAlias">別名</sys:String>
+    <sys:String x:Key="GroupNotificationSettings">通知設定</sys:String>
+    <sys:String x:Key="CheckboxEnableNotification">啟用通知</sys:String>
+    <sys:String x:Key="LabelNotificationTiming">通知時間:</sys:String>
+    <sys:String x:Key="CheckboxEnableSound">播放音效</sys:String>
+
+    <!-- SettingsWindow -->
+    <sys:String x:Key="SettingsWindowTitle">設定 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="TabNotification">通知</sys:String>
+    <sys:String x:Key="TabStartup">啟動</sys:String>
+    <sys:String x:Key="TabData">資料</sys:String>
+    <sys:String x:Key="TabAdvanced">進階</sys:String>
+    <sys:String x:Key="LabelNotificationTime">通知時刻:</sys:String>
+    <sys:String x:Key="LabelDefaultNotificationTiming">預設通知時間:</sys:String>
+    <sys:String x:Key="HintDaysBefore">天前</sys:String>
+    <sys:String x:Key="HintDaysRange">（1-30）</sys:String>
+    <sys:String x:Key="CheckboxDefaultSound">預設播放音效</sys:String>
+    <sys:String x:Key="CheckboxStartWithWindows">在 Windows 啟動時執行</sys:String>
+    <sys:String x:Key="HintStartupDescription">※ 應用程式將自動啟動</sys:String>
+    <sys:String x:Key="ButtonExportCsv">匯出 CSV</sys:String>
+    <sys:String x:Key="ButtonImportCsv">匯入 CSV</sys:String>
+    <sys:String x:Key="ButtonBackupDatabase">備份資料庫</sys:String>
+    <sys:String x:Key="HintImportCsv">※ 僅支援本工具匯出的 CSV</sys:String>
+    <sys:String x:Key="LabelLanguage">語言:</sys:String>
+    <sys:String x:Key="LanguageJapanese">日本語</sys:String>
+    <sys:String x:Key="LanguageEnglish">English</sys:String>
+    <sys:String x:Key="LanguageKorean">한국어</sys:String>
+    <sys:String x:Key="LanguageTraditionalChinese">繁體中文</sys:String>
+    <sys:String x:Key="LabelDatabasePath">資料庫路徑:</sys:String>
+    <sys:String x:Key="LabelLogPath">記錄檔路徑:</sys:String>
+
+    <!-- AboutWindow -->
+    <sys:String x:Key="AboutWindowTitle">關於 Friend Birthday Manager</sys:String>
+    <sys:String x:Key="LabelVersion">版本</sys:String>
+    <sys:String x:Key="LabelAuthor">開發者:</sys:String>
+    <sys:String x:Key="LabelTwitter">Twitter:</sys:String>
+    <sys:String x:Key="LabelContact">聯絡方式:</sys:String>
+    <sys:String x:Key="LabelSourceCode">原始碼:</sys:String>
+    <sys:String x:Key="LabelLicense">授權條款:</sys:String>
+
+    <!-- TrayIcon -->
+    <sys:String x:Key="TrayMenuAddBirthday">新增生日 (_A)</sys:String>
+    <sys:String x:Key="TrayMenuShowList">顯示清單 (_L)</sys:String>
+    <sys:String x:Key="TrayMenuSettings">設定 (_S)</sys:String>
+    <sys:String x:Key="TrayMenuCredits">關於 (_C)</sys:String>
+    <sys:String x:Key="TrayMenuExit">結束 (_X)</sys:String>
+    <sys:String x:Key="TrayTooltipDaysUntil">Friend Birthday Manager - 剩餘{0}天</sys:String>
+    <sys:String x:Key="TrayTooltipDefault">Friend Birthday Manager</sys:String>
+
+    <!-- Messages -->
+    <sys:String x:Key="MessageReady">準備就緒</sys:String>
+    <sys:String x:Key="MessageFriendAdded">已新增朋友 '{0}'</sys:String>
+    <sys:String x:Key="MessageErrorAddFriend">錯誤: 新增朋友失敗</sys:String>
+    <sys:String x:Key="MessageErrorNameExists">錯誤: 「{0}」已經註冊過了</sys:String>
+    <sys:String x:Key="MessageErrorBirthYearRange">錯誤: 出生年份請輸入 1900-2100 範圍內的數字</sys:String>
+    <sys:String x:Key="MessageErrorBirthMonthRange">錯誤: 出生月份請輸入 1-12 範圍內的數字</sys:String>
+    <sys:String x:Key="MessageErrorBirthDayRange">錯誤: 出生日期請輸入 1-31 範圍內的數字</sys:String>
+    <sys:String x:Key="MessageErrorInvalidDate">錯誤: 無效的日期</sys:String>
+    <sys:String x:Key="MessageCsvImportResultWithErrors">CSV 匯入完成（新增: {0}筆、更新: {1}筆、失敗: {2}筆）</sys:String>
+    <sys:String x:Key="MessageSettingsLoaded">已載入設定</sys:String>
+    <sys:String x:Key="MessageSettingsSaved">已儲存設定</sys:String>
+    <sys:String x:Key="MessageErrorLoadSettings">錯誤: 載入設定失敗</sys:String>
+    <sys:String x:Key="MessageErrorSaveSettings">錯誤: 儲存設定失敗</sys:String>
+    <sys:String x:Key="MessageCsvExporting">正在匯出 CSV...</sys:String>
+    <sys:String x:Key="MessageCsvExported">CSV 匯出完成: {0}</sys:String>
+    <sys:String x:Key="MessageCsvExportCancelled">CSV 匯出已取消</sys:String>
+    <sys:String x:Key="MessageErrorCsvExport">錯誤: CSV 匯出失敗</sys:String>
+    <sys:String x:Key="MessageCsvImporting">正在匯入 CSV...</sys:String>
+    <sys:String x:Key="MessageCsvImported">CSV 匯入完成: 新增 {0}筆、更新 {1}筆</sys:String>
+    <sys:String x:Key="MessageCsvImportCancelled">CSV 匯入已取消</sys:String>
+    <sys:String x:Key="MessageErrorCsvImport">錯誤: CSV 匯入失敗</sys:String>
+    <sys:String x:Key="MessageDatabaseBackingUp">正在備份資料庫...</sys:String>
+    <sys:String x:Key="MessageDatabaseBackedUp">備份完成: {0}</sys:String>
+    <sys:String x:Key="MessageDatabaseBackupCancelled">備份已取消</sys:String>
+    <sys:String x:Key="MessageErrorDatabaseBackup">錯誤: 備份失敗</sys:String>
+    <sys:String x:Key="MessageErrorDatabaseNotFound">錯誤: 找不到資料庫檔案</sys:String>
+    <sys:String x:Key="MessageNameRequired">錯誤: 姓名為必填欄位</sys:String>
+    <sys:String x:Key="MessageFriendSaved">已儲存朋友資訊</sys:String>
+    <sys:String x:Key="MessageFriendDeleted">已刪除</sys:String>
+    <sys:String x:Key="MessageErrorSaveFriend">錯誤: 儲存失敗</sys:String>
+    <sys:String x:Key="MessageErrorDeleteFriend">錯誤: 刪除失敗</sys:String>
+
+    <!-- Dialog Titles -->
+    <sys:String x:Key="DialogTitleCsvExport">CSV 匯出</sys:String>
+    <sys:String x:Key="DialogTitleCsvImport">CSV 匯入</sys:String>
+    <sys:String x:Key="DialogTitleDatabaseBackup">資料庫備份</sys:String>
+    <sys:String x:Key="DialogTitleBackupComplete">備份完成</sys:String>
+    <sys:String x:Key="DialogTitleCsvImportResult">CSV 匯入結果</sys:String>
+    <sys:String x:Key="DialogTitleCsvImportComplete">CSV 匯入完成</sys:String>
+    <sys:String x:Key="DialogTitleError">錯誤</sys:String>
+    <sys:String x:Key="DialogTitleConfirmDelete">確認刪除</sys:String>
+
+    <!-- Dialog Messages -->
+    <sys:String x:Key="DialogMessageDatabaseBackedUp">已備份資料庫:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageBackupFailed">備份失敗:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportResult">匯入結果:\n\n新增: {0}筆\n更新: {1}筆\n失敗: {2}筆\n\n錯誤詳情:\n{3}</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportSuccess">新增: {0}筆\n更新: {1}筆</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportFailed">CSV 匯入失敗:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageConfirmDelete">確定要刪除「{0}」嗎？</sys:String>
+
+    <!-- File Filters -->
+    <sys:String x:Key="FileFilterCsv">CSV 檔案 (*.csv)|*.csv</sys:String>
+    <sys:String x:Key="FileFilterCsvAll">CSV 檔案 (*.csv)|*.csv|所有檔案 (*.*)|*.*</sys:String>
+    <sys:String x:Key="FileFilterDatabase">資料庫檔案 (*.db)|*.db|所有檔案 (*.*)|*.*</sys:String>
+
+    <!-- Date Display -->
+    <sys:String x:Key="DaysUntilFormat">（剩餘 {0}天）</sys:String>
+    <sys:String x:Key="DaysFormat">{0}天</sys:String>
+    <sys:String x:Key="YearSuffix">年</sys:String>
+    <sys:String x:Key="MonthSuffix">月</sys:String>
+    <sys:String x:Key="DaySuffix">日</sys:String>
+    <sys:String x:Key="NotSet">未設定</sys:String>
+    <sys:String x:Key="DaysUntilNone">－</sys:String>
+
+</ResourceDictionary>
