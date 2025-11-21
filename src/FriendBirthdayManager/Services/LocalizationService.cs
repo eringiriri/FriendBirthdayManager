@@ -115,6 +115,10 @@ public class LocalizationService : ILocalizationService
             {
                 return "en-US";
             }
+            else if (languageName.StartsWith("es", StringComparison.OrdinalIgnoreCase))
+            {
+                return "es-ES";
+            }
 
             // デフォルトは日本語
             _logger.LogInformation("Unsupported system language, using default: ja-JP");
@@ -129,7 +133,7 @@ public class LocalizationService : ILocalizationService
 
     private bool IsValidLanguage(string languageCode)
     {
-        var validLanguages = new[] { "ja-JP", "en-US", "ko-KR", "zh-TW" };
+        var validLanguages = new[] { "ja-JP", "en-US", "ko-KR", "zh-TW", "es-ES" };
         return validLanguages.Contains(languageCode);
     }
 }

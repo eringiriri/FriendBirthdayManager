@@ -76,6 +76,7 @@
     <sys:String x:Key="LanguageEnglish">English</sys:String>
     <sys:String x:Key="LanguageKorean">한국어</sys:String>
     <sys:String x:Key="LanguageTraditionalChinese">繁體中文</sys:String>
+    <sys:String x:Key="LanguageSpanish">Español</sys:String>
     <sys:String x:Key="LabelDatabasePath">資料庫路徑:</sys:String>
     <sys:String x:Key="LabelLogPath">記錄檔路徑:</sys:String>
 
