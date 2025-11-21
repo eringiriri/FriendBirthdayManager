@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using FriendBirthdayManager.Data;
 using H.NotifyIcon;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -129,6 +130,36 @@ public class TrayIconService : ITrayIconService, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update tray icon");
+        }
+    }
+
+    public async Task UpdateTrayIconFromRepositoryAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Updating tray icon from repository...");
+
+            using var scope = _serviceProvider.CreateScope();
+            var friendRepository = scope.ServiceProvider.GetRequiredService<IFriendRepository>();
+
+            // 直近の誕生日を取得
+            var upcomingBirthdays = await friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
+            if (upcomingBirthdays.Count > 0)
+            {
+                var nextFriend = upcomingBirthdays[0];
+                var daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
+                UpdateIcon(daysUntil);
+                _logger.LogInformation("Tray icon updated from repository: Next birthday in {Days} days", daysUntil);
+            }
+            else
+            {
+                UpdateIcon(null);
+                _logger.LogInformation("Tray icon updated from repository: No upcoming birthdays");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update tray icon from repository");
         }
     }
 
