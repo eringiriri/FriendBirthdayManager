@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using FriendBirthdayManager.Data;
 using FriendBirthdayManager.Models;
 using FriendBirthdayManager.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FriendBirthdayManager.ViewModels;
