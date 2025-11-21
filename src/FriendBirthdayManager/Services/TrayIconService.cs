@@ -289,9 +289,18 @@ public class TrayIconService : ITrayIconService, IDisposable
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var settingsWindow = _serviceProvider.GetRequiredService<Views.SettingsWindow>();
-                settingsWindow.Show();
-                settingsWindow.Activate();
+                var settingsWindow = Application.Current.Windows.OfType<Views.SettingsWindow>().FirstOrDefault();
+                if (settingsWindow == null)
+                {
+                    settingsWindow = _serviceProvider.GetRequiredService<Views.SettingsWindow>();
+                    settingsWindow.Show();
+                }
+                else
+                {
+                    settingsWindow.Show();
+                    settingsWindow.WindowState = WindowState.Normal;
+                    settingsWindow.Activate();
+                }
             });
         }
         catch (Exception ex)
@@ -306,9 +315,18 @@ public class TrayIconService : ITrayIconService, IDisposable
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var aboutWindow = _serviceProvider.GetRequiredService<Views.AboutWindow>();
-                aboutWindow.Show();
-                aboutWindow.Activate();
+                var aboutWindow = Application.Current.Windows.OfType<Views.AboutWindow>().FirstOrDefault();
+                if (aboutWindow == null)
+                {
+                    aboutWindow = _serviceProvider.GetRequiredService<Views.AboutWindow>();
+                    aboutWindow.Show();
+                }
+                else
+                {
+                    aboutWindow.Show();
+                    aboutWindow.WindowState = WindowState.Normal;
+                    aboutWindow.Activate();
+                }
             });
         }
         catch (Exception ex)
