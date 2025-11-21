@@ -16,6 +16,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IStartupService _startupService;
     private readonly ICsvService _csvService;
     private readonly ILocalizationService _localizationService;
+    private readonly ITrayIconService _trayIconService;
     private readonly ILogger<SettingsViewModel> _logger;
 
     [ObservableProperty]
@@ -44,12 +45,14 @@ public partial class SettingsViewModel : ObservableObject
         IStartupService startupService,
         ICsvService csvService,
         ILocalizationService localizationService,
+        ITrayIconService trayIconService,
         ILogger<SettingsViewModel> logger)
     {
         _settingsRepository = settingsRepository;
         _startupService = startupService;
         _csvService = csvService;
         _localizationService = localizationService;
+        _trayIconService = trayIconService;
         _logger = logger;
     }
 
@@ -98,6 +101,9 @@ public partial class SettingsViewModel : ObservableObject
 
             // 言語設定の更新
             _localizationService.ChangeLanguage(Language);
+
+            // タスクトレイメニューとツールチップを更新
+            _trayIconService.UpdateMenu();
 
             // スタートアップ登録の更新
             if (StartWithWindows)

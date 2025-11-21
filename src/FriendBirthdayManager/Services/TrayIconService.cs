@@ -155,6 +155,36 @@ public class TrayIconService : ITrayIconService, IDisposable
         }
     }
 
+    public void UpdateMenu()
+    {
+        try
+        {
+            if (_taskbarIcon == null)
+            {
+                _logger.LogWarning("TaskbarIcon is not initialized");
+                return;
+            }
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // メニューを再作成
+                _taskbarIcon.ContextMenu = CreateContextMenu();
+
+                // ツールチップも更新
+                string tooltip = _currentDaysUntil.HasValue
+                    ? string.Format(_localizationService.GetString("TrayTooltipDaysUntil"), _currentDaysUntil.Value)
+                    : _localizationService.GetString("TrayTooltipDefault");
+                _taskbarIcon.ToolTipText = tooltip;
+            });
+
+            _logger.LogInformation("Tray icon menu and tooltip updated");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update menu");
+        }
+    }
+
     private ContextMenu CreateContextMenu()
     {
         var contextMenu = new ContextMenu();
