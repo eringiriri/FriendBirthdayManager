@@ -21,6 +21,11 @@ public interface ITrayIconService
     void ShowBalloonTip(string title, string message);
 
     /// <summary>
+    /// メニューとツールチップを更新（言語変更時に使用）
+    /// </summary>
+    void UpdateMenu();
+
+    /// <summary>
     /// リソースを破棄
     /// </summary>
     void Dispose();

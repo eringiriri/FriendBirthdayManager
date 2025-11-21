@@ -97,6 +97,15 @@
     <sys:String x:Key="TrayTooltipDefault">Friend Birthday Manager</sys:String>
 
     <!-- Messages -->
+    <sys:String x:Key="MessageReady">準備完了</sys:String>
+    <sys:String x:Key="MessageFriendAdded">友人 '{0}' を追加しました</sys:String>
+    <sys:String x:Key="MessageErrorAddFriend">エラー: 友人の追加に失敗しました</sys:String>
+    <sys:String x:Key="MessageErrorNameExists">エラー: 「{0}」は既に登録されています</sys:String>
+    <sys:String x:Key="MessageErrorBirthYearRange">エラー: 誕生年は1900-2100の範囲で入力してください</sys:String>
+    <sys:String x:Key="MessageErrorBirthMonthRange">エラー: 誕生月は1-12の範囲で入力してください</sys:String>
+    <sys:String x:Key="MessageErrorBirthDayRange">エラー: 誕生日は1-31の範囲で入力してください</sys:String>
+    <sys:String x:Key="MessageErrorInvalidDate">エラー: 無効な日付です</sys:String>
+    <sys:String x:Key="MessageCsvImportResultWithErrors">CSV インポート完了（新規: {0}件、更新: {1}件、失敗: {2}件）</sys:String>
     <sys:String x:Key="MessageSettingsLoaded">設定を読み込みました</sys:String>
     <sys:String x:Key="MessageSettingsSaved">設定を保存しました</sys:String>
     <sys:String x:Key="MessageErrorLoadSettings">エラー: 設定の読み込みに失敗しました</sys:String>
@@ -142,5 +151,14 @@
     <sys:String x:Key="FileFilterCsv">CSVファイル (*.csv)|*.csv</sys:String>
     <sys:String x:Key="FileFilterCsvAll">CSVファイル (*.csv)|*.csv|すべてのファイル (*.*)|*.*</sys:String>
     <sys:String x:Key="FileFilterDatabase">データベースファイル (*.db)|*.db|すべてのファイル (*.*)|*.*</sys:String>
+
+    <!-- Date Display -->
+    <sys:String x:Key="DaysUntilFormat">（あと {0}日）</sys:String>
+    <sys:String x:Key="DaysFormat">{0}日</sys:String>
+    <sys:String x:Key="YearSuffix">年</sys:String>
+    <sys:String x:Key="MonthSuffix">月</sys:String>
+    <sys:String x:Key="DaySuffix">日</sys:String>
+    <sys:String x:Key="NotSet">未設定</sys:String>
+    <sys:String x:Key="DaysUntilNone">－</sys:String>
 
 </ResourceDictionary>

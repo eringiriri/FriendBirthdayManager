@@ -20,6 +20,7 @@ public partial class ListViewModel : ObservableObject
     private readonly IFriendRepository _friendRepository;
     private readonly ICsvService _csvService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILocalizationService _localizationService;
     private readonly ILogger<ListViewModel> _logger;
     private List<Friend> _allFriends = new();
     private CancellationTokenSource? _searchCancellationTokenSource;
@@ -40,11 +41,13 @@ public partial class ListViewModel : ObservableObject
         IFriendRepository friendRepository,
         ICsvService csvService,
         IServiceProvider serviceProvider,
+        ILocalizationService localizationService,
         ILogger<ListViewModel> logger)
     {
         _friendRepository = friendRepository;
         _csvService = csvService;
         _serviceProvider = serviceProvider;
+        _localizationService = localizationService;
         _logger = logger;
     }
 
@@ -138,12 +141,17 @@ public partial class ListViewModel : ObservableObject
             foreach (var friend in sortedFriends)
             {
                 var daysUntil = friend.CalculateDaysUntilBirthday(DateTime.Now);
+                var daysUntilDisplay = daysUntil.HasValue
+                    ? string.Format(_localizationService.GetString("DaysFormat"), daysUntil.Value)
+                    : _localizationService.GetString("DaysUntilNone");
+
                 Friends.Add(new FriendListItem
                 {
                     Id = friend.Id,
                     Name = friend.Name,
                     BirthdayDisplay = friend.GetBirthdayDisplayString(),
                     DaysUntil = daysUntil,
+                    DaysUntilDisplay = daysUntilDisplay,
                     NotifyEnabled = friend.NotifyEnabled
                 });
             }
@@ -254,6 +262,9 @@ public partial class ListViewModel : ObservableObject
 
             // リストを再読み込み
             await LoadFriendsAsync();
+
+            // タスクトレイアイコンを更新
+            await UpdateTrayIconAsync();
         }
         catch (Exception ex)
         {
@@ -410,6 +421,38 @@ public partial class ListViewModel : ObservableObject
                 MessageBoxImage.Error);
         }
     }
+
+    private async Task UpdateTrayIconAsync()
+    {
+        try
+        {
+            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
+            if (trayIconService == null)
+            {
+                _logger.LogWarning("ITrayIconService not found");
+                return;
+            }
+
+            // 直近の誕生日を取得
+            var upcomingFriends = await _friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
+            var nextFriend = upcomingFriends.FirstOrDefault();
+
+            int? daysUntil = null;
+            if (nextFriend != null)
+            {
+                daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
+            }
+
+            // タスクトレイアイコンを更新
+            trayIconService.UpdateIcon(daysUntil);
+
+            _logger.LogInformation("Tray icon updated from ListViewModel: Days until next birthday = {Days}", daysUntil);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update tray icon");
+        }
+    }
 }
 
 /// <summary>
@@ -430,9 +473,10 @@ public partial class FriendListItem : ObservableObject
     private int? _daysUntil;
 
     [ObservableProperty]
-    private bool _notifyEnabled;
+    private string _daysUntilDisplay = string.Empty;
 
-    public string DaysUntilDisplay => DaysUntil.HasValue ? $"{DaysUntil.Value}日" : "－";
+    [ObservableProperty]
+    private bool _notifyEnabled;
 
     public string NotifyIcon => NotifyEnabled ? "🔔" : "🔕";
 }
