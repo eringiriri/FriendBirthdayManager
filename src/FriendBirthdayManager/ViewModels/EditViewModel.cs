@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FriendBirthdayManager.Data;
 using FriendBirthdayManager.Models;
+using FriendBirthdayManager.Services;
 using Microsoft.Extensions.Logging;
 
 namespace FriendBirthdayManager.ViewModels;
@@ -13,6 +14,7 @@ namespace FriendBirthdayManager.ViewModels;
 public partial class EditViewModel : ObservableObject
 {
     private readonly IFriendRepository _friendRepository;
+    private readonly ILocalizationService _localizationService;
     private readonly ILogger<EditViewModel> _logger;
     private int? _friendId;
 
@@ -46,9 +48,13 @@ public partial class EditViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
-    public EditViewModel(IFriendRepository friendRepository, ILogger<EditViewModel> logger)
+    public EditViewModel(
+        IFriendRepository friendRepository,
+        ILocalizationService localizationService,
+        ILogger<EditViewModel> logger)
     {
         _friendRepository = friendRepository;
+        _localizationService = localizationService;
         _logger = logger;
     }
 
@@ -128,7 +134,7 @@ public partial class EditViewModel : ObservableObject
             // バリデーション
             if (string.IsNullOrWhiteSpace(Name))
             {
-                StatusMessage = "エラー: 名前を入力してください";
+                StatusMessage = _localizationService.GetString("MessageNameRequired");
                 _logger.LogWarning("Validation failed: Name is required");
                 System.Windows.MessageBox.Show(
                     "名前を入力してください。",
@@ -143,7 +149,7 @@ public partial class EditViewModel : ObservableObject
             var existingFriends = await _friendRepository.GetAllAsync();
             if (existingFriends.Any(f => f.Id != _friendId && f.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)))
             {
-                StatusMessage = $"エラー: 「{trimmedName}」は既に登録されています";
+                StatusMessage = string.Format(_localizationService.GetString("MessageErrorNameExists"), trimmedName);
                 _logger.LogWarning("Duplicate friend name rejected in edit: {FriendName}", trimmedName);
                 System.Windows.MessageBox.Show(
                     $"「{trimmedName}」は既に登録されています。\n別の名前を入力してください。",
@@ -162,7 +168,7 @@ public partial class EditViewModel : ObservableObject
             {
                 if (!int.TryParse(BirthYear, out var year) || year < 1900 || year > 2100)
                 {
-                    StatusMessage = "エラー: 誕生年が無効です（1900-2100）";
+                    StatusMessage = _localizationService.GetString("MessageErrorBirthYearRange");
                     _logger.LogWarning("Validation failed: Invalid birth year: {BirthYear}", BirthYear);
                     System.Windows.MessageBox.Show(
                         "誕生年は1900～2100の範囲で入力してください。",
@@ -178,7 +184,7 @@ public partial class EditViewModel : ObservableObject
             {
                 if (!int.TryParse(BirthMonth, out var month) || month < 1 || month > 12)
                 {
-                    StatusMessage = "エラー: 誕生月が無効です（1-12）";
+                    StatusMessage = _localizationService.GetString("MessageErrorBirthMonthRange");
                     _logger.LogWarning("Validation failed: Invalid birth month: {BirthMonth}", BirthMonth);
                     System.Windows.MessageBox.Show(
                         "誕生月は1～12の範囲で入力してください。",
@@ -194,7 +200,7 @@ public partial class EditViewModel : ObservableObject
             {
                 if (!int.TryParse(BirthDay, out var day) || day < 1 || day > 31)
                 {
-                    StatusMessage = "エラー: 誕生日が無効です（1-31）";
+                    StatusMessage = _localizationService.GetString("MessageErrorBirthDayRange");
                     _logger.LogWarning("Validation failed: Invalid birth day: {BirthDay}", BirthDay);
                     System.Windows.MessageBox.Show(
                         "誕生日は1～31の範囲で入力してください。",
@@ -210,7 +216,7 @@ public partial class EditViewModel : ObservableObject
             var friend = await _friendRepository.GetByIdAsync(_friendId.Value);
             if (friend == null)
             {
-                StatusMessage = "エラー: 友人情報が見つかりません";
+                StatusMessage = _localizationService.GetString("MessageErrorSaveFriend");
                 _logger.LogError("Friend not found for saving: {FriendId}", _friendId);
                 System.Windows.MessageBox.Show(
                     "友人情報が見つかりませんでした。",
@@ -262,7 +268,7 @@ public partial class EditViewModel : ObservableObject
             // 保存
             await _friendRepository.UpdateAsync(friend);
 
-            StatusMessage = "保存しました";
+            StatusMessage = _localizationService.GetString("MessageFriendSaved");
             _logger.LogInformation("Friend saved successfully: {FriendName} (ID: {FriendId})", friend.Name, friend.Id);
 
             System.Windows.MessageBox.Show(
@@ -283,7 +289,7 @@ public partial class EditViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save friend: {FriendId}", _friendId);
-            StatusMessage = "エラー: 保存に失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorSaveFriend");
             System.Windows.MessageBox.Show(
                 $"保存に失敗しました:\n{ex.Message}",
                 "エラー",
@@ -323,7 +329,7 @@ public partial class EditViewModel : ObservableObject
             await _friendRepository.DeleteAsync(_friendId.Value);
 
             _logger.LogInformation("Friend deleted successfully: {FriendId}", _friendId);
-            StatusMessage = "削除しました";
+            StatusMessage = _localizationService.GetString("MessageFriendDeleted");
 
             // ウィンドウを閉じる
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -337,7 +343,7 @@ public partial class EditViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete friend: {FriendId}", _friendId);
-            StatusMessage = "エラー: 削除に失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorDeleteFriend");
             System.Windows.MessageBox.Show(
                 $"削除に失敗しました:\n{ex.Message}",
                 "エラー",

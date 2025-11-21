@@ -68,13 +68,13 @@ public partial class SettingsViewModel : ObservableObject
             StartWithWindows = settings.StartWithWindows;
             Language = settings.Language;
 
-            StatusMessage = "設定を読み込みました";
+            StatusMessage = _localizationService.GetString("MessageSettingsLoaded");
             _logger.LogInformation("Settings loaded successfully");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load settings");
-            StatusMessage = "エラー: 設定の読み込みに失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorLoadSettings");
         }
     }
 
@@ -109,13 +109,13 @@ public partial class SettingsViewModel : ObservableObject
                 await _startupService.UnregisterAsync();
             }
 
-            StatusMessage = "設定を保存しました";
+            StatusMessage = _localizationService.GetString("MessageSettingsSaved");
             _logger.LogInformation("Settings saved successfully");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save settings");
-            StatusMessage = "エラー: 設定の保存に失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorSaveSettings");
         }
     }
 
@@ -125,7 +125,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             _logger.LogInformation("Exporting CSV...");
-            StatusMessage = "CSV エクスポート中...";
+            StatusMessage = _localizationService.GetString("MessageCsvExporting");
 
             // SaveFileDialogを使用してファイル保存先を選択
             var saveFileDialog = new Microsoft.Win32.SaveFileDialog
@@ -140,7 +140,7 @@ public partial class SettingsViewModel : ObservableObject
             var result = saveFileDialog.ShowDialog();
             if (result != true)
             {
-                StatusMessage = "CSV エクスポートがキャンセルされました";
+                StatusMessage = _localizationService.GetString("MessageCsvExportCancelled");
                 return;
             }
 
@@ -148,18 +148,18 @@ public partial class SettingsViewModel : ObservableObject
 
             if (success)
             {
-                StatusMessage = $"CSV エクスポート完了: {saveFileDialog.FileName}";
+                StatusMessage = string.Format(_localizationService.GetString("MessageCsvExported"), saveFileDialog.FileName);
                 _logger.LogInformation("CSV exported successfully to {FilePath}", saveFileDialog.FileName);
             }
             else
             {
-                StatusMessage = "エラー: CSV エクスポートに失敗しました";
+                StatusMessage = _localizationService.GetString("MessageErrorCsvExport");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to export CSV");
-            StatusMessage = "エラー: CSV エクスポートに失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorCsvExport");
         }
     }
 
@@ -169,7 +169,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             _logger.LogInformation("Importing CSV...");
-            StatusMessage = "CSV インポート中...";
+            StatusMessage = _localizationService.GetString("MessageCsvImporting");
 
             // OpenFileDialogを使用してファイルを選択
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
@@ -182,7 +182,7 @@ public partial class SettingsViewModel : ObservableObject
             var result = openFileDialog.ShowDialog();
             if (result != true)
             {
-                StatusMessage = "CSV インポートがキャンセルされました";
+                StatusMessage = _localizationService.GetString("MessageCsvImportCancelled");
                 return;
             }
 
@@ -197,7 +197,7 @@ public partial class SettingsViewModel : ObservableObject
                 }
 
                 _logger.LogWarning("CSV import completed with errors: {ErrorCount}", importResult.Errors.Count);
-                StatusMessage = $"CSV インポート完了（新規: {importResult.SuccessCount}件、更新: {importResult.UpdateCount}件、失敗: {importResult.FailureCount}件）";
+                StatusMessage = string.Format(_localizationService.GetString("MessageCsvImportResultWithErrors"), importResult.SuccessCount, importResult.UpdateCount, importResult.FailureCount);
 
                 // エラーメッセージをダイアログで表示
                 System.Windows.MessageBox.Show(
@@ -208,7 +208,7 @@ public partial class SettingsViewModel : ObservableObject
             }
             else
             {
-                StatusMessage = $"CSV インポート完了: 新規 {importResult.SuccessCount}件、更新 {importResult.UpdateCount}件";
+                StatusMessage = string.Format(_localizationService.GetString("MessageCsvImported"), importResult.SuccessCount, importResult.UpdateCount);
                 _logger.LogInformation("CSV imported successfully: {SuccessCount} new, {UpdateCount} updated", importResult.SuccessCount, importResult.UpdateCount);
 
                 System.Windows.MessageBox.Show(
@@ -221,7 +221,7 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to import CSV");
-            StatusMessage = "エラー: CSV インポートに失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorCsvImport");
             System.Windows.MessageBox.Show(
                 $"CSV インポートに失敗しました:\n{ex.Message}",
                 "エラー",
@@ -236,7 +236,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             _logger.LogInformation("Backing up database...");
-            StatusMessage = "データベースバックアップ中...";
+            StatusMessage = _localizationService.GetString("MessageDatabaseBackingUp");
 
             // データベースファイルのパスを取得
             var dbPath = System.IO.Path.Combine(
@@ -246,7 +246,7 @@ public partial class SettingsViewModel : ObservableObject
 
             if (!System.IO.File.Exists(dbPath))
             {
-                StatusMessage = "エラー: データベースファイルが見つかりません";
+                StatusMessage = _localizationService.GetString("MessageErrorDatabaseNotFound");
                 _logger.LogWarning("Database file not found: {DbPath}", dbPath);
                 return;
             }
@@ -264,14 +264,14 @@ public partial class SettingsViewModel : ObservableObject
             var result = saveFileDialog.ShowDialog();
             if (result != true)
             {
-                StatusMessage = "バックアップがキャンセルされました";
+                StatusMessage = _localizationService.GetString("MessageDatabaseBackupCancelled");
                 return;
             }
 
             // データベースファイルをコピー
             await Task.Run(() => System.IO.File.Copy(dbPath, saveFileDialog.FileName, true));
 
-            StatusMessage = $"バックアップ完了: {saveFileDialog.FileName}";
+            StatusMessage = string.Format(_localizationService.GetString("MessageDatabaseBackedUp"), saveFileDialog.FileName);
             _logger.LogInformation("Database backed up to {FilePath}", saveFileDialog.FileName);
 
             System.Windows.MessageBox.Show(
@@ -283,7 +283,7 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to backup database");
-            StatusMessage = "エラー: バックアップに失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorDatabaseBackup");
             System.Windows.MessageBox.Show(
                 $"バックアップに失敗しました:\n{ex.Message}",
                 "エラー",

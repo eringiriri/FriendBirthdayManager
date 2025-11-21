@@ -97,6 +97,15 @@
     <sys:String x:Key="TrayTooltipDefault">Friend Birthday Manager</sys:String>
 
     <!-- Messages -->
+    <sys:String x:Key="MessageReady">Ready</sys:String>
+    <sys:String x:Key="MessageFriendAdded">Added friend '{0}'</sys:String>
+    <sys:String x:Key="MessageErrorAddFriend">Error: Failed to add friend</sys:String>
+    <sys:String x:Key="MessageErrorNameExists">Error: "{0}" is already registered</sys:String>
+    <sys:String x:Key="MessageErrorBirthYearRange">Error: Birth year must be between 1900-2100</sys:String>
+    <sys:String x:Key="MessageErrorBirthMonthRange">Error: Birth month must be between 1-12</sys:String>
+    <sys:String x:Key="MessageErrorBirthDayRange">Error: Birth day must be between 1-31</sys:String>
+    <sys:String x:Key="MessageErrorInvalidDate">Error: Invalid date</sys:String>
+    <sys:String x:Key="MessageCsvImportResultWithErrors">CSV import completed (New: {0}, Updated: {1}, Failed: {2})</sys:String>
     <sys:String x:Key="MessageSettingsLoaded">Settings loaded</sys:String>
     <sys:String x:Key="MessageSettingsSaved">Settings saved</sys:String>
     <sys:String x:Key="MessageErrorLoadSettings">Error: Failed to load settings</sys:String>

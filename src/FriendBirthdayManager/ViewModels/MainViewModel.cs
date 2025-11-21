@@ -46,7 +46,7 @@ public partial class MainViewModel : ObservableObject
     private ObservableCollection<UpcomingBirthdayItem> _upcomingBirthdays = new();
 
     [ObservableProperty]
-    private string _statusMessage = "準備完了";
+    private string _statusMessage = string.Empty;
 
     public MainViewModel(
         IFriendRepository friendRepository,
@@ -58,6 +58,8 @@ public partial class MainViewModel : ObservableObject
         _serviceProvider = serviceProvider;
         _localizationService = localizationService;
         _logger = logger;
+
+        _statusMessage = _localizationService.GetString("MessageReady");
 
         // 直近の誕生日を読み込み
         _ = LoadUpcomingBirthdaysAsync();
@@ -83,7 +85,7 @@ public partial class MainViewModel : ObservableObject
             // バリデーション
             if (string.IsNullOrWhiteSpace(Name))
             {
-                StatusMessage = "エラー: 名前は必須です";
+                StatusMessage = _localizationService.GetString("MessageNameRequired");
                 MessageBox.Show("名前を入力してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -93,7 +95,7 @@ public partial class MainViewModel : ObservableObject
             var existingFriends = await _friendRepository.GetAllAsync();
             if (existingFriends.Any(f => f.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase)))
             {
-                StatusMessage = $"エラー: 「{trimmedName}」は既に登録されています";
+                StatusMessage = string.Format(_localizationService.GetString("MessageErrorNameExists"), trimmedName);
                 MessageBox.Show(
                     $"「{trimmedName}」は既に登録されています。\n別の名前を入力してください。",
                     "エラー",
@@ -118,7 +120,7 @@ public partial class MainViewModel : ObservableObject
                 }
                 else
                 {
-                    StatusMessage = "エラー: 誕生年は1900-2100の範囲で入力してください";
+                    StatusMessage = _localizationService.GetString("MessageErrorBirthYearRange");
                     MessageBox.Show("誕生年は1900-2100の範囲で入力してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -133,7 +135,7 @@ public partial class MainViewModel : ObservableObject
                 }
                 else
                 {
-                    StatusMessage = "エラー: 誕生月は1-12の範囲で入力してください";
+                    StatusMessage = _localizationService.GetString("MessageErrorBirthMonthRange");
                     MessageBox.Show("誕生月は1-12の範囲で入力してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -148,7 +150,7 @@ public partial class MainViewModel : ObservableObject
                 }
                 else
                 {
-                    StatusMessage = "エラー: 誕生日は1-31の範囲で入力してください";
+                    StatusMessage = _localizationService.GetString("MessageErrorBirthDayRange");
                     MessageBox.Show("誕生日は1-31の範囲で入力してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -164,7 +166,7 @@ public partial class MainViewModel : ObservableObject
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    StatusMessage = "エラー: 無効な日付です";
+                    StatusMessage = _localizationService.GetString("MessageErrorInvalidDate");
                     MessageBox.Show("指定された誕生月と誕生日の組み合わせは無効です。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -201,7 +203,7 @@ public partial class MainViewModel : ObservableObject
             var friendId = await _friendRepository.AddAsync(friend);
 
             _logger.LogInformation("Friend added successfully: {FriendName} (ID: {FriendId})", friend.Name, friendId);
-            StatusMessage = $"友人 '{friend.Name}' を追加しました";
+            StatusMessage = string.Format(_localizationService.GetString("MessageFriendAdded"), friend.Name);
 
             MessageBox.Show($"友人 '{friend.Name}' を追加しました。", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -214,7 +216,7 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save friend");
-            StatusMessage = "エラー: 友人の追加に失敗しました";
+            StatusMessage = _localizationService.GetString("MessageErrorAddFriend");
             MessageBox.Show($"友人の追加に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
