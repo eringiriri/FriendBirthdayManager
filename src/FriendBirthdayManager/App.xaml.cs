@@ -67,6 +67,9 @@ public partial class App : Application
             // ConfigureAwait(false)を使用してデッドロックを防止
             InitializeDatabaseAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
+            // 言語設定の初期化
+            InitializeLanguageAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+
             // タスクトレイアイコンを初期化
             _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
             _trayIconService.Initialize();
@@ -172,6 +175,7 @@ public partial class App : Application
         // DbContextを使用する場合はIServiceProviderを注入してスコープを作成する
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddScoped<ICsvService, CsvService>();
         services.AddScoped<IStartupService, StartupService>();
 
@@ -214,6 +218,44 @@ public partial class App : Application
         {
             Log.Error(ex, "Failed to initialize database");
             throw;
+        }
+    }
+
+    private async Task InitializeLanguageAsync()
+    {
+        try
+        {
+            Log.Information("Initializing language settings...");
+
+            var localizationService = _serviceProvider!.GetRequiredService<ILocalizationService>();
+
+            using var scope = _serviceProvider!.CreateScope();
+            var settingsRepository = scope.ServiceProvider.GetRequiredService<ISettingsRepository>();
+
+            // 保存されている言語設定を取得
+            var settings = await settingsRepository.GetAppSettingsAsync();
+            var languageCode = settings.Language;
+
+            // 言語設定が空の場合はシステムのデフォルト言語を使用
+            if (string.IsNullOrEmpty(languageCode))
+            {
+                languageCode = localizationService.GetSystemLanguage();
+                Log.Information("No saved language setting, using system language: {Language}", languageCode);
+
+                // デフォルト言語をデータベースに保存
+                settings.Language = languageCode;
+                await settingsRepository.SaveAppSettingsAsync(settings);
+            }
+
+            // 言語を設定
+            localizationService.ChangeLanguage(languageCode);
+
+            Log.Information("Language initialized successfully: {Language}", languageCode);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to initialize language settings");
+            // エラーが発生してもアプリケーションは継続
         }
     }
 

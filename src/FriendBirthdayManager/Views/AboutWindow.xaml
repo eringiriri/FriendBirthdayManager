@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FriendBirthdayManager.Views"
         mc:Ignorable="d"
-        Title="Friend Birthday Manager について"
+        Title="{DynamicResource AboutWindowTitle}"
         Height="450"
         Width="500"
         WindowStartupLocation="CenterScreen"
@@ -27,7 +27,7 @@
 
         <!-- アプリ名 -->
         <TextBlock Grid.Row="0"
-                   Text="Friend Birthday Manager"
+                   Text="{DynamicResource AppName}"
                    FontSize="24"
                    FontWeight="Bold"
                    HorizontalAlignment="Center"
@@ -35,64 +35,59 @@
 
         <!-- バージョン -->
         <TextBlock Grid.Row="1"
-                   Text="{Binding Version, StringFormat='Version {0}'}"
                    FontSize="14"
                    HorizontalAlignment="Center"
                    Foreground="Gray"
-                   Margin="0,0,0,20"/>
+                   Margin="0,0,0,20">
+            <Run Text="{DynamicResource LabelVersion}"/>
+            <Run Text=" "/>
+            <Run Text="{Binding Version, Mode=OneWay}"/>
+        </TextBlock>
 
         <!-- 区切り線 -->
         <Separator Grid.Row="2" Margin="0,0,0,20"/>
 
         <!-- 制作者 -->
         <StackPanel Grid.Row="3" Margin="0,0,0,15">
-            <TextBlock Text="制作者:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelAuthor}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBlock Text="{Binding Author}" FontSize="14"/>
         </StackPanel>
 
         <!-- Twitter -->
         <StackPanel Grid.Row="4" Margin="0,0,0,15">
-            <TextBlock Text="Twitter:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelTwitter}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBlock>
                 <Hyperlink Command="{Binding OpenTwitterCommand}" TextDecorations="None">
                     <Run Text="{Binding TwitterUrl, Mode=OneWay}"/>
                 </Hyperlink>
             </TextBlock>
-            <TextBlock Text="(クリックでプロフィールを開く)"
-                       FontSize="11"
-                       Foreground="Gray"
-                       Margin="0,2,0,0"/>
         </StackPanel>
 
         <!-- 連絡先 -->
         <StackPanel Grid.Row="5" Margin="0,0,0,15">
-            <TextBlock Text="連絡先:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelContact}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBlock Text="{Binding Email}" FontSize="14"/>
         </StackPanel>
 
         <!-- GitHub -->
         <StackPanel Grid.Row="6" Margin="0,0,0,15">
-            <TextBlock Text="ソースコード:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelSourceCode}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBlock>
                 <Hyperlink Command="{Binding OpenGitHubCommand}" TextDecorations="None">
                     <Run Text="GitHub"/>
                 </Hyperlink>
             </TextBlock>
-            <TextBlock Text="(クリックでリポジトリを開く)"
-                       FontSize="11"
-                       Foreground="Gray"
-                       Margin="0,2,0,0"/>
         </StackPanel>
 
         <!-- ライセンス -->
         <StackPanel Grid.Row="7" Margin="0,0,0,15">
-            <TextBlock Text="ライセンス:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock Text="{DynamicResource LabelLicense}" FontWeight="Bold" Margin="0,0,0,5"/>
             <TextBlock Text="{Binding License}" FontSize="14"/>
         </StackPanel>
 
         <!-- 閉じるボタン -->
         <Button Grid.Row="8"
-                Content="閉じる"
+                Content="{DynamicResource ButtonClose}"
                 Width="100"
                 Height="35"
                 HorizontalAlignment="Center"

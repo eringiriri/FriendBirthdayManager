@@ -15,6 +15,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ISettingsRepository _settingsRepository;
     private readonly IStartupService _startupService;
     private readonly ICsvService _csvService;
+    private readonly ILocalizationService _localizationService;
     private readonly ILogger<SettingsViewModel> _logger;
 
     [ObservableProperty]
@@ -42,11 +43,13 @@ public partial class SettingsViewModel : ObservableObject
         ISettingsRepository settingsRepository,
         IStartupService startupService,
         ICsvService csvService,
+        ILocalizationService localizationService,
         ILogger<SettingsViewModel> logger)
     {
         _settingsRepository = settingsRepository;
         _startupService = startupService;
         _csvService = csvService;
+        _localizationService = localizationService;
         _logger = logger;
     }
 
@@ -92,6 +95,9 @@ public partial class SettingsViewModel : ObservableObject
             };
 
             await _settingsRepository.SaveAppSettingsAsync(settings);
+
+            // 言語設定の更新
+            _localizationService.ChangeLanguage(Language);
 
             // スタートアップ登録の更新
             if (StartWithWindows)

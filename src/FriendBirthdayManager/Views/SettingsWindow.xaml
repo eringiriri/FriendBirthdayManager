@@ -101,6 +101,7 @@
                               Margin="0,0,0,20">
                         <ComboBoxItem Content="日本語" Tag="ja-JP"/>
                         <ComboBoxItem Content="English" Tag="en-US"/>
+                        <ComboBoxItem Content="한국어" Tag="ko-KR"/>
                     </ComboBox>
 
                     <TextBlock Text="データベースパス:" FontWeight="Bold" Margin="0,0,0,5"/>
