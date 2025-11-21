@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:FriendBirthdayManager.Views"
         xmlns:vm="clr-namespace:FriendBirthdayManager.ViewModels"
         mc:Ignorable="d"
-        Title="友人一覧 - Friend Birthday Manager"
+        Title="{DynamicResource ListWindowTitle}"
         Height="600"
         Width="800"
         WindowStartupLocation="CenterScreen">
@@ -30,15 +30,15 @@
                 </TextBox.InputBindings>
             </TextBox>
             <ComboBox SelectedIndex="{Binding SortIndex}" Width="120" Margin="0,0,10,0">
-                <ComboBoxItem Content="近い順"/>
-                <ComboBoxItem Content="日付順"/>
-                <ComboBoxItem Content="名前順"/>
+                <ComboBoxItem Content="{DynamicResource SortByNearest}"/>
+                <ComboBoxItem Content="{DynamicResource SortByDate}"/>
+                <ComboBoxItem Content="{DynamicResource SortByName}"/>
             </ComboBox>
-            <Button Content="インポート"
+            <Button Content="{DynamicResource ButtonImport}"
                     Command="{Binding ImportCsvCommand}"
                     Width="100"
                     Margin="0,0,10,0"/>
-            <Button Content="エクスポート"
+            <Button Content="{DynamicResource ButtonExport}"
                     Command="{Binding ExportCsvCommand}"
                     Width="100"/>
         </StackPanel>
@@ -56,14 +56,14 @@
                   HeadersVisibility="Column"
                   AlternatingRowBackground="LightGray">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="名前" Binding="{Binding Name}" Width="*"/>
-                <DataGridTextColumn Header="誕生日" Binding="{Binding BirthdayDisplay}" Width="150"/>
-                <DataGridTextColumn Header="あと" Binding="{Binding DaysUntilDisplay}" Width="80"/>
-                <DataGridTextColumn Header="通知" Binding="{Binding NotifyIcon}" Width="60"/>
+                <DataGridTextColumn Header="{DynamicResource ColumnName}" Binding="{Binding Name}" Width="*"/>
+                <DataGridTextColumn Header="{DynamicResource ColumnBirthday}" Binding="{Binding BirthdayDisplay}" Width="150"/>
+                <DataGridTextColumn Header="{DynamicResource ColumnDaysUntil}" Binding="{Binding DaysUntilDisplay}" Width="80"/>
+                <DataGridTextColumn Header="{DynamicResource ColumnNotification}" Binding="{Binding NotifyIcon}" Width="60"/>
                 <DataGridTemplateColumn Header="" Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Button Content="編集"
+                            <Button Content="{DynamicResource ButtonEdit}"
                                     Command="{Binding DataContext.EditFriendCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"/>
                         </DataTemplate>
@@ -72,7 +72,7 @@
                 <DataGridTemplateColumn Header="" Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Button Content="削除"
+                            <Button Content="{DynamicResource ButtonDelete}"
                                     Command="{Binding DataContext.DeleteFriendCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
                                     Background="#FFCCAA"/>

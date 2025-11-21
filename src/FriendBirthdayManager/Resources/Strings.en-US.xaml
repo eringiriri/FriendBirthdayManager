@@ -1,0 +1,146 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Common -->
+    <sys:String x:Key="AppName">Friend Birthday Manager</sys:String>
+    <sys:String x:Key="ButtonSave">Save</sys:String>
+    <sys:String x:Key="ButtonClose">Close</sys:String>
+    <sys:String x:Key="ButtonCancel">Cancel</sys:String>
+    <sys:String x:Key="ButtonDelete">Delete</sys:String>
+    <sys:String x:Key="ButtonEdit">Edit</sys:String>
+    <sys:String x:Key="ButtonRegister">Register</sys:String>
+
+    <!-- MainWindow -->
+    <sys:String x:Key="MainWindowTitle">Add Friend Birthday - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="LabelName">Name: *Required</sys:String>
+    <sys:String x:Key="LabelBirthday">Birthday:</sys:String>
+    <sys:String x:Key="LabelAlias">Alias:</sys:String>
+    <sys:String x:Key="LabelMemo">Memo:</sys:String>
+    <sys:String x:Key="LabelNotificationSettings">Notification Settings:</sys:String>
+    <sys:String x:Key="ButtonAddAlias">+ Add Alias</sys:String>
+    <sys:String x:Key="ButtonShowList">Show List</sys:String>
+    <sys:String x:Key="GroupUpcomingBirthdays">📅 Upcoming Birthdays</sys:String>
+    <sys:String x:Key="HintBirthdayRequired">※ Enter both month and day to enable notifications</sys:String>
+
+    <!-- NotificationSettings -->
+    <sys:String x:Key="NotifyDefault">Use Default Settings</sys:String>
+    <sys:String x:Key="NotifyNone">No Notification</sys:String>
+    <sys:String x:Key="NotifyDays1">1 Day Before</sys:String>
+    <sys:String x:Key="NotifyDays2">2 Days Before</sys:String>
+    <sys:String x:Key="NotifyDays3">3 Days Before</sys:String>
+    <sys:String x:Key="NotifyDays5">5 Days Before</sys:String>
+    <sys:String x:Key="NotifyDays7">7 Days Before</sys:String>
+    <sys:String x:Key="NotifyDays14">14 Days Before</sys:String>
+    <sys:String x:Key="NotifyDays30">30 Days Before</sys:String>
+
+    <!-- ListWindow -->
+    <sys:String x:Key="ListWindowTitle">Friend List - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="ButtonImport">Import</sys:String>
+    <sys:String x:Key="ButtonExport">Export</sys:String>
+    <sys:String x:Key="SortByNearest">Nearest</sys:String>
+    <sys:String x:Key="SortByDate">By Date</sys:String>
+    <sys:String x:Key="SortByName">By Name</sys:String>
+    <sys:String x:Key="ColumnName">Name</sys:String>
+    <sys:String x:Key="ColumnBirthday">Birthday</sys:String>
+    <sys:String x:Key="ColumnDaysUntil">Days</sys:String>
+    <sys:String x:Key="ColumnNotification">Notify</sys:String>
+
+    <!-- EditWindow -->
+    <sys:String x:Key="EditWindowTitle">Edit Friend Information - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="GroupAlias">Alias</sys:String>
+    <sys:String x:Key="GroupNotificationSettings">Notification Settings</sys:String>
+    <sys:String x:Key="CheckboxEnableNotification">Enable Notification</sys:String>
+    <sys:String x:Key="LabelNotificationTiming">Notification Timing:</sys:String>
+    <sys:String x:Key="CheckboxEnableSound">Enable Sound</sys:String>
+
+    <!-- SettingsWindow -->
+    <sys:String x:Key="SettingsWindowTitle">Settings - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="TabNotification">Notification</sys:String>
+    <sys:String x:Key="TabStartup">Startup</sys:String>
+    <sys:String x:Key="TabData">Data</sys:String>
+    <sys:String x:Key="TabAdvanced">Advanced</sys:String>
+    <sys:String x:Key="LabelNotificationTime">Notification Time:</sys:String>
+    <sys:String x:Key="LabelDefaultNotificationTiming">Default Notification Timing:</sys:String>
+    <sys:String x:Key="HintDaysBefore">days before</sys:String>
+    <sys:String x:Key="HintDaysRange">(1-30)</sys:String>
+    <sys:String x:Key="CheckboxDefaultSound">Enable sound by default</sys:String>
+    <sys:String x:Key="CheckboxStartWithWindows">Register to Windows Startup</sys:String>
+    <sys:String x:Key="HintStartupDescription">※ Automatically starts the application</sys:String>
+    <sys:String x:Key="ButtonExportCsv">Export CSV</sys:String>
+    <sys:String x:Key="ButtonImportCsv">Import CSV</sys:String>
+    <sys:String x:Key="ButtonBackupDatabase">Backup Database</sys:String>
+    <sys:String x:Key="HintImportCsv">※ Import only CSV files exported by this tool</sys:String>
+    <sys:String x:Key="LabelLanguage">Language:</sys:String>
+    <sys:String x:Key="LanguageJapanese">日本語</sys:String>
+    <sys:String x:Key="LanguageEnglish">English</sys:String>
+    <sys:String x:Key="LanguageKorean">한국어</sys:String>
+    <sys:String x:Key="LabelDatabasePath">Database Path:</sys:String>
+    <sys:String x:Key="LabelLogPath">Log File Path:</sys:String>
+
+    <!-- AboutWindow -->
+    <sys:String x:Key="AboutWindowTitle">About Friend Birthday Manager</sys:String>
+    <sys:String x:Key="LabelVersion">Version</sys:String>
+    <sys:String x:Key="LabelAuthor">Author:</sys:String>
+    <sys:String x:Key="LabelTwitter">Twitter:</sys:String>
+    <sys:String x:Key="LabelContact">Contact:</sys:String>
+    <sys:String x:Key="LabelSourceCode">Source Code:</sys:String>
+    <sys:String x:Key="LabelLicense">License:</sys:String>
+
+    <!-- TrayIcon -->
+    <sys:String x:Key="TrayMenuAddBirthday">Add Birthday (_A)</sys:String>
+    <sys:String x:Key="TrayMenuShowList">Show List (_L)</sys:String>
+    <sys:String x:Key="TrayMenuSettings">Settings (_S)</sys:String>
+    <sys:String x:Key="TrayMenuCredits">Credits (_C)</sys:String>
+    <sys:String x:Key="TrayMenuExit">Exit (_X)</sys:String>
+    <sys:String x:Key="TrayTooltipDaysUntil">Friend Birthday Manager - {0} days left</sys:String>
+    <sys:String x:Key="TrayTooltipDefault">Friend Birthday Manager</sys:String>
+
+    <!-- Messages -->
+    <sys:String x:Key="MessageSettingsLoaded">Settings loaded</sys:String>
+    <sys:String x:Key="MessageSettingsSaved">Settings saved</sys:String>
+    <sys:String x:Key="MessageErrorLoadSettings">Error: Failed to load settings</sys:String>
+    <sys:String x:Key="MessageErrorSaveSettings">Error: Failed to save settings</sys:String>
+    <sys:String x:Key="MessageCsvExporting">Exporting CSV...</sys:String>
+    <sys:String x:Key="MessageCsvExported">CSV export completed: {0}</sys:String>
+    <sys:String x:Key="MessageCsvExportCancelled">CSV export cancelled</sys:String>
+    <sys:String x:Key="MessageErrorCsvExport">Error: CSV export failed</sys:String>
+    <sys:String x:Key="MessageCsvImporting">Importing CSV...</sys:String>
+    <sys:String x:Key="MessageCsvImported">CSV import completed: {0} new, {1} updated</sys:String>
+    <sys:String x:Key="MessageCsvImportCancelled">CSV import cancelled</sys:String>
+    <sys:String x:Key="MessageErrorCsvImport">Error: CSV import failed</sys:String>
+    <sys:String x:Key="MessageDatabaseBackingUp">Backing up database...</sys:String>
+    <sys:String x:Key="MessageDatabaseBackedUp">Backup completed: {0}</sys:String>
+    <sys:String x:Key="MessageDatabaseBackupCancelled">Backup cancelled</sys:String>
+    <sys:String x:Key="MessageErrorDatabaseBackup">Error: Backup failed</sys:String>
+    <sys:String x:Key="MessageErrorDatabaseNotFound">Error: Database file not found</sys:String>
+    <sys:String x:Key="MessageNameRequired">Error: Name is required</sys:String>
+    <sys:String x:Key="MessageFriendSaved">Friend information saved</sys:String>
+    <sys:String x:Key="MessageFriendDeleted">Deleted</sys:String>
+    <sys:String x:Key="MessageErrorSaveFriend">Error: Failed to save</sys:String>
+    <sys:String x:Key="MessageErrorDeleteFriend">Error: Failed to delete</sys:String>
+
+    <!-- Dialog Titles -->
+    <sys:String x:Key="DialogTitleCsvExport">CSV Export</sys:String>
+    <sys:String x:Key="DialogTitleCsvImport">CSV Import</sys:String>
+    <sys:String x:Key="DialogTitleDatabaseBackup">Database Backup</sys:String>
+    <sys:String x:Key="DialogTitleBackupComplete">Backup Complete</sys:String>
+    <sys:String x:Key="DialogTitleCsvImportResult">CSV Import Result</sys:String>
+    <sys:String x:Key="DialogTitleCsvImportComplete">CSV Import Complete</sys:String>
+    <sys:String x:Key="DialogTitleError">Error</sys:String>
+    <sys:String x:Key="DialogTitleConfirmDelete">Confirm Delete</sys:String>
+
+    <!-- Dialog Messages -->
+    <sys:String x:Key="DialogMessageDatabaseBackedUp">Database backed up:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageBackupFailed">Backup failed:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportResult">Import result:\n\nNew: {0}\nUpdated: {1}\nFailed: {2}\n\nError details:\n{3}</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportSuccess">New: {0}\nUpdated: {1}</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportFailed">CSV import failed:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageConfirmDelete">Are you sure you want to delete "{0}"?</sys:String>
+
+    <!-- File Filters -->
+    <sys:String x:Key="FileFilterCsv">CSV Files (*.csv)|*.csv</sys:String>
+    <sys:String x:Key="FileFilterCsvAll">CSV Files (*.csv)|*.csv|All Files (*.*)|*.*</sys:String>
+    <sys:String x:Key="FileFilterDatabase">Database Files (*.db)|*.db|All Files (*.*)|*.*</sys:String>
+
+</ResourceDictionary>

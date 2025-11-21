@@ -1,0 +1,146 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Common -->
+    <sys:String x:Key="AppName">Friend Birthday Manager</sys:String>
+    <sys:String x:Key="ButtonSave">저장</sys:String>
+    <sys:String x:Key="ButtonClose">닫기</sys:String>
+    <sys:String x:Key="ButtonCancel">취소</sys:String>
+    <sys:String x:Key="ButtonDelete">삭제</sys:String>
+    <sys:String x:Key="ButtonEdit">편집</sys:String>
+    <sys:String x:Key="ButtonRegister">등록</sys:String>
+
+    <!-- MainWindow -->
+    <sys:String x:Key="MainWindowTitle">친구 생일 추가 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="LabelName">이름: *필수</sys:String>
+    <sys:String x:Key="LabelBirthday">생일:</sys:String>
+    <sys:String x:Key="LabelAlias">별칭:</sys:String>
+    <sys:String x:Key="LabelMemo">메모:</sys:String>
+    <sys:String x:Key="LabelNotificationSettings">알림 설정:</sys:String>
+    <sys:String x:Key="ButtonAddAlias">+ 별칭 추가</sys:String>
+    <sys:String x:Key="ButtonShowList">목록 보기</sys:String>
+    <sys:String x:Key="GroupUpcomingBirthdays">📅 다가오는 생일</sys:String>
+    <sys:String x:Key="HintBirthdayRequired">※ 월과 일을 모두 입력하면 알림 대상이 됩니다</sys:String>
+
+    <!-- NotificationSettings -->
+    <sys:String x:Key="NotifyDefault">기본 설정 사용</sys:String>
+    <sys:String x:Key="NotifyNone">알림 없음</sys:String>
+    <sys:String x:Key="NotifyDays1">1일 전부터</sys:String>
+    <sys:String x:Key="NotifyDays2">2일 전부터</sys:String>
+    <sys:String x:Key="NotifyDays3">3일 전부터</sys:String>
+    <sys:String x:Key="NotifyDays5">5일 전부터</sys:String>
+    <sys:String x:Key="NotifyDays7">7일 전부터</sys:String>
+    <sys:String x:Key="NotifyDays14">14일 전부터</sys:String>
+    <sys:String x:Key="NotifyDays30">30일 전부터</sys:String>
+
+    <!-- ListWindow -->
+    <sys:String x:Key="ListWindowTitle">친구 목록 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="ButtonImport">가져오기</sys:String>
+    <sys:String x:Key="ButtonExport">내보내기</sys:String>
+    <sys:String x:Key="SortByNearest">가까운 순</sys:String>
+    <sys:String x:Key="SortByDate">날짜순</sys:String>
+    <sys:String x:Key="SortByName">이름순</sys:String>
+    <sys:String x:Key="ColumnName">이름</sys:String>
+    <sys:String x:Key="ColumnBirthday">생일</sys:String>
+    <sys:String x:Key="ColumnDaysUntil">남은 일수</sys:String>
+    <sys:String x:Key="ColumnNotification">알림</sys:String>
+
+    <!-- EditWindow -->
+    <sys:String x:Key="EditWindowTitle">친구 정보 편집 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="GroupAlias">별칭</sys:String>
+    <sys:String x:Key="GroupNotificationSettings">알림 설정</sys:String>
+    <sys:String x:Key="CheckboxEnableNotification">알림 활성화</sys:String>
+    <sys:String x:Key="LabelNotificationTiming">알림 타이밍:</sys:String>
+    <sys:String x:Key="CheckboxEnableSound">소리 재생</sys:String>
+
+    <!-- SettingsWindow -->
+    <sys:String x:Key="SettingsWindowTitle">설정 - Friend Birthday Manager</sys:String>
+    <sys:String x:Key="TabNotification">알림</sys:String>
+    <sys:String x:Key="TabStartup">시작</sys:String>
+    <sys:String x:Key="TabData">데이터</sys:String>
+    <sys:String x:Key="TabAdvanced">고급</sys:String>
+    <sys:String x:Key="LabelNotificationTime">알림 시간:</sys:String>
+    <sys:String x:Key="LabelDefaultNotificationTiming">기본 알림 타이밍:</sys:String>
+    <sys:String x:Key="HintDaysBefore">일 전부터</sys:String>
+    <sys:String x:Key="HintDaysRange">(1-30)</sys:String>
+    <sys:String x:Key="CheckboxDefaultSound">기본적으로 소리 재생</sys:String>
+    <sys:String x:Key="CheckboxStartWithWindows">Windows 시작 프로그램에 등록</sys:String>
+    <sys:String x:Key="HintStartupDescription">※ 애플리케이션을 자동으로 시작합니다</sys:String>
+    <sys:String x:Key="ButtonExportCsv">CSV 내보내기</sys:String>
+    <sys:String x:Key="ButtonImportCsv">CSV 가져오기</sys:String>
+    <sys:String x:Key="ButtonBackupDatabase">데이터베이스 백업</sys:String>
+    <sys:String x:Key="HintImportCsv">※ 이 도구에서 출력한 CSV만 가져올 수 있습니다</sys:String>
+    <sys:String x:Key="LabelLanguage">언어:</sys:String>
+    <sys:String x:Key="LanguageJapanese">日本語</sys:String>
+    <sys:String x:Key="LanguageEnglish">English</sys:String>
+    <sys:String x:Key="LanguageKorean">한국어</sys:String>
+    <sys:String x:Key="LabelDatabasePath">데이터베이스 경로:</sys:String>
+    <sys:String x:Key="LabelLogPath">로그 파일 경로:</sys:String>
+
+    <!-- AboutWindow -->
+    <sys:String x:Key="AboutWindowTitle">Friend Birthday Manager 정보</sys:String>
+    <sys:String x:Key="LabelVersion">버전</sys:String>
+    <sys:String x:Key="LabelAuthor">제작자:</sys:String>
+    <sys:String x:Key="LabelTwitter">Twitter:</sys:String>
+    <sys:String x:Key="LabelContact">연락처:</sys:String>
+    <sys:String x:Key="LabelSourceCode">소스 코드:</sys:String>
+    <sys:String x:Key="LabelLicense">라이선스:</sys:String>
+
+    <!-- TrayIcon -->
+    <sys:String x:Key="TrayMenuAddBirthday">생일 추가 (_A)</sys:String>
+    <sys:String x:Key="TrayMenuShowList">목록 보기 (_L)</sys:String>
+    <sys:String x:Key="TrayMenuSettings">설정 (_S)</sys:String>
+    <sys:String x:Key="TrayMenuCredits">크레딧 (_C)</sys:String>
+    <sys:String x:Key="TrayMenuExit">종료 (_X)</sys:String>
+    <sys:String x:Key="TrayTooltipDaysUntil">Friend Birthday Manager - {0}일 남음</sys:String>
+    <sys:String x:Key="TrayTooltipDefault">Friend Birthday Manager</sys:String>
+
+    <!-- Messages -->
+    <sys:String x:Key="MessageSettingsLoaded">설정을 불러왔습니다</sys:String>
+    <sys:String x:Key="MessageSettingsSaved">설정을 저장했습니다</sys:String>
+    <sys:String x:Key="MessageErrorLoadSettings">오류: 설정을 불러오는 데 실패했습니다</sys:String>
+    <sys:String x:Key="MessageErrorSaveSettings">오류: 설정을 저장하는 데 실패했습니다</sys:String>
+    <sys:String x:Key="MessageCsvExporting">CSV 내보내는 중...</sys:String>
+    <sys:String x:Key="MessageCsvExported">CSV 내보내기 완료: {0}</sys:String>
+    <sys:String x:Key="MessageCsvExportCancelled">CSV 내보내기가 취소되었습니다</sys:String>
+    <sys:String x:Key="MessageErrorCsvExport">오류: CSV 내보내기 실패</sys:String>
+    <sys:String x:Key="MessageCsvImporting">CSV 가져오는 중...</sys:String>
+    <sys:String x:Key="MessageCsvImported">CSV 가져오기 완료: 신규 {0}건, 업데이트 {1}건</sys:String>
+    <sys:String x:Key="MessageCsvImportCancelled">CSV 가져오기가 취소되었습니다</sys:String>
+    <sys:String x:Key="MessageErrorCsvImport">오류: CSV 가져오기 실패</sys:String>
+    <sys:String x:Key="MessageDatabaseBackingUp">데이터베이스 백업 중...</sys:String>
+    <sys:String x:Key="MessageDatabaseBackedUp">백업 완료: {0}</sys:String>
+    <sys:String x:Key="MessageDatabaseBackupCancelled">백업이 취소되었습니다</sys:String>
+    <sys:String x:Key="MessageErrorDatabaseBackup">오류: 백업 실패</sys:String>
+    <sys:String x:Key="MessageErrorDatabaseNotFound">오류: 데이터베이스 파일을 찾을 수 없습니다</sys:String>
+    <sys:String x:Key="MessageNameRequired">오류: 이름은 필수입니다</sys:String>
+    <sys:String x:Key="MessageFriendSaved">친구 정보를 저장했습니다</sys:String>
+    <sys:String x:Key="MessageFriendDeleted">삭제했습니다</sys:String>
+    <sys:String x:Key="MessageErrorSaveFriend">오류: 저장 실패</sys:String>
+    <sys:String x:Key="MessageErrorDeleteFriend">오류: 삭제 실패</sys:String>
+
+    <!-- Dialog Titles -->
+    <sys:String x:Key="DialogTitleCsvExport">CSV 내보내기</sys:String>
+    <sys:String x:Key="DialogTitleCsvImport">CSV 가져오기</sys:String>
+    <sys:String x:Key="DialogTitleDatabaseBackup">데이터베이스 백업</sys:String>
+    <sys:String x:Key="DialogTitleBackupComplete">백업 완료</sys:String>
+    <sys:String x:Key="DialogTitleCsvImportResult">CSV 가져오기 결과</sys:String>
+    <sys:String x:Key="DialogTitleCsvImportComplete">CSV 가져오기 완료</sys:String>
+    <sys:String x:Key="DialogTitleError">오류</sys:String>
+    <sys:String x:Key="DialogTitleConfirmDelete">삭제 확인</sys:String>
+
+    <!-- Dialog Messages -->
+    <sys:String x:Key="DialogMessageDatabaseBackedUp">데이터베이스를 백업했습니다:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageBackupFailed">백업에 실패했습니다:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportResult">가져오기 결과:\n\n신규 등록: {0}건\n업데이트: {1}건\n실패: {2}건\n\n오류 세부 정보:\n{3}</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportSuccess">신규 등록: {0}건\n업데이트: {1}건</sys:String>
+    <sys:String x:Key="DialogMessageCsvImportFailed">CSV 가져오기에 실패했습니다:\n{0}</sys:String>
+    <sys:String x:Key="DialogMessageConfirmDelete">"{0}"을(를) 삭제하시겠습니까?</sys:String>
+
+    <!-- File Filters -->
+    <sys:String x:Key="FileFilterCsv">CSV 파일 (*.csv)|*.csv</sys:String>
+    <sys:String x:Key="FileFilterCsvAll">CSV 파일 (*.csv)|*.csv|모든 파일 (*.*)|*.*</sys:String>
+    <sys:String x:Key="FileFilterDatabase">데이터베이스 파일 (*.db)|*.db|모든 파일 (*.*)|*.*</sys:String>
+
+</ResourceDictionary>
