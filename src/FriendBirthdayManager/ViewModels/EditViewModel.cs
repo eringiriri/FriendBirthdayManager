@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using FriendBirthdayManager.Data;
 using FriendBirthdayManager.Models;
 using FriendBirthdayManager.Services;
+using FriendBirthdayManager.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -84,16 +85,7 @@ public partial class EditViewModel : ObservableObject
             NotifySoundEnabled = friend.NotifySoundEnabled ?? true;
 
             // NotifyDaysBeforeを NotifyDaysBeforeIndex に変換
-            if (friend.NotifyDaysBefore.HasValue)
-            {
-                var notifyDaysMapping = new[] { 0, 0, 1, 2, 3, 5, 7, 14, 30 };
-                var index = Array.IndexOf(notifyDaysMapping, friend.NotifyDaysBefore.Value);
-                NotifyDaysBeforeIndex = index >= 0 ? index : 0;
-            }
-            else
-            {
-                NotifyDaysBeforeIndex = 0; // デフォルト
-            }
+            NotifyDaysBeforeIndex = FriendValidator.ConvertNotifyDaysToIndex(friend.NotifyDaysBefore);
 
             // エイリアスを読み込み
             Aliases.Clear();
@@ -163,57 +155,60 @@ public partial class EditViewModel : ObservableObject
                 return;
             }
 
-            // 誕生日のパース
+            // 誕生日のバリデーション
             int? birthYear = null;
             int? birthMonth = null;
             int? birthDay = null;
 
+            var yearValidation = FriendValidator.ValidateBirthYear(BirthYear);
+            if (!yearValidation.IsValid)
+            {
+                StatusMessage = _localizationService.GetString("MessageErrorBirthYearRange");
+                _logger.LogWarning("Validation failed: Invalid birth year: {BirthYear}", BirthYear);
+                System.Windows.MessageBox.Show(
+                    yearValidation.ErrorMessage,
+                    "入力エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
             if (!string.IsNullOrWhiteSpace(BirthYear))
             {
-                if (!int.TryParse(BirthYear, out var year) || year < 1900 || year > 2100)
-                {
-                    StatusMessage = _localizationService.GetString("MessageErrorBirthYearRange");
-                    _logger.LogWarning("Validation failed: Invalid birth year: {BirthYear}", BirthYear);
-                    System.Windows.MessageBox.Show(
-                        "誕生年は1900～2100の範囲で入力してください。",
-                        "入力エラー",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Warning);
-                    return;
-                }
-                birthYear = year;
+                birthYear = int.Parse(BirthYear);
             }
 
+            var monthValidation = FriendValidator.ValidateBirthMonth(BirthMonth);
+            if (!monthValidation.IsValid)
+            {
+                StatusMessage = _localizationService.GetString("MessageErrorBirthMonthRange");
+                _logger.LogWarning("Validation failed: Invalid birth month: {BirthMonth}", BirthMonth);
+                System.Windows.MessageBox.Show(
+                    monthValidation.ErrorMessage,
+                    "入力エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
             if (!string.IsNullOrWhiteSpace(BirthMonth))
             {
-                if (!int.TryParse(BirthMonth, out var month) || month < 1 || month > 12)
-                {
-                    StatusMessage = _localizationService.GetString("MessageErrorBirthMonthRange");
-                    _logger.LogWarning("Validation failed: Invalid birth month: {BirthMonth}", BirthMonth);
-                    System.Windows.MessageBox.Show(
-                        "誕生月は1～12の範囲で入力してください。",
-                        "入力エラー",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Warning);
-                    return;
-                }
-                birthMonth = month;
+                birthMonth = int.Parse(BirthMonth);
             }
 
+            var dayValidation = FriendValidator.ValidateBirthDay(BirthDay);
+            if (!dayValidation.IsValid)
+            {
+                StatusMessage = _localizationService.GetString("MessageErrorBirthDayRange");
+                _logger.LogWarning("Validation failed: Invalid birth day: {BirthDay}", BirthDay);
+                System.Windows.MessageBox.Show(
+                    dayValidation.ErrorMessage,
+                    "入力エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
             if (!string.IsNullOrWhiteSpace(BirthDay))
             {
-                if (!int.TryParse(BirthDay, out var day) || day < 1 || day > 31)
-                {
-                    StatusMessage = _localizationService.GetString("MessageErrorBirthDayRange");
-                    _logger.LogWarning("Validation failed: Invalid birth day: {BirthDay}", BirthDay);
-                    System.Windows.MessageBox.Show(
-                        "誕生日は1～31の範囲で入力してください。",
-                        "入力エラー",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Warning);
-                    return;
-                }
-                birthDay = day;
+                birthDay = int.Parse(BirthDay);
             }
 
             // 既存の友人情報を取得
@@ -230,6 +225,20 @@ public partial class EditViewModel : ObservableObject
                 return;
             }
 
+            // 日付の組み合わせの妥当性チェック
+            var combinationValidation = FriendValidator.ValidateBirthdateCombination(birthYear, birthMonth, birthDay);
+            if (!combinationValidation.IsValid)
+            {
+                StatusMessage = _localizationService.GetString("MessageErrorInvalidDate");
+                _logger.LogWarning("Validation failed: Invalid date combination");
+                System.Windows.MessageBox.Show(
+                    combinationValidation.ErrorMessage,
+                    "入力エラー",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
             // 友人情報を更新
             friend.Name = trimmedName;
             friend.BirthYear = birthYear;
@@ -240,20 +249,18 @@ public partial class EditViewModel : ObservableObject
             friend.NotifySoundEnabled = NotifySoundEnabled;
 
             // NotifyDaysBeforeIndexをNotifyDaysBefore（日数）に変換
-            // 0=デフォルト, 1=通知無効, 2以降は具体的な日数
             if (NotifyDaysBeforeIndex == 1)
             {
                 friend.NotifyEnabled = false;
-                friend.NotifyDaysBefore = null; // デフォルト使用
+                friend.NotifyDaysBefore = null;
             }
             else if (NotifyDaysBeforeIndex > 1)
             {
-                var notifyDaysMapping = new[] { 0, 0, 1, 2, 3, 5, 7, 14, 30 };
-                friend.NotifyDaysBefore = notifyDaysMapping[NotifyDaysBeforeIndex];
+                friend.NotifyDaysBefore = FriendValidator.ConvertNotifyIndexToDays(NotifyDaysBeforeIndex);
             }
             else
             {
-                friend.NotifyDaysBefore = null; // デフォルト使用
+                friend.NotifyDaysBefore = null;
             }
 
             // エイリアスを更新
@@ -276,7 +283,11 @@ public partial class EditViewModel : ObservableObject
             _logger.LogInformation("Friend saved successfully: {FriendName} (ID: {FriendId})", friend.Name, friend.Id);
 
             // タスクトレイアイコンを更新
-            await UpdateTrayIconAsync();
+            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
+            if (trayIconService != null)
+            {
+                await trayIconService.UpdateTrayIconFromRepositoryAsync();
+            }
 
             System.Windows.MessageBox.Show(
                 "保存しました。",
@@ -339,7 +350,11 @@ public partial class EditViewModel : ObservableObject
             StatusMessage = _localizationService.GetString("MessageFriendDeleted");
 
             // タスクトレイアイコンを更新
-            await UpdateTrayIconAsync();
+            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
+            if (trayIconService != null)
+            {
+                await trayIconService.UpdateTrayIconFromRepositoryAsync();
+            }
 
             // ウィンドウを閉じる
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -359,38 +374,6 @@ public partial class EditViewModel : ObservableObject
                 "エラー",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Error);
-        }
-    }
-
-    private async Task UpdateTrayIconAsync()
-    {
-        try
-        {
-            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
-            if (trayIconService == null)
-            {
-                _logger.LogWarning("ITrayIconService not found");
-                return;
-            }
-
-            // 直近の誕生日を取得
-            var upcomingFriends = await _friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
-            var nextFriend = upcomingFriends.FirstOrDefault();
-
-            int? daysUntil = null;
-            if (nextFriend != null)
-            {
-                daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
-            }
-
-            // タスクトレイアイコンを更新
-            trayIconService.UpdateIcon(daysUntil);
-
-            _logger.LogInformation("Tray icon updated from EditViewModel: Days until next birthday = {Days}", daysUntil);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update tray icon");
         }
     }
 }

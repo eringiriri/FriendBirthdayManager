@@ -77,7 +77,7 @@ public partial class App : Application
 
             // アイコンを更新（直近の誕生日を取得）
             // ConfigureAwait(false)を使用してデッドロックを防止
-            UpdateTrayIconAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            _trayIconService.UpdateTrayIconFromRepositoryAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
             // 通知サービスを開始
             _notificationService = _serviceProvider.GetRequiredService<INotificationService>();
@@ -266,36 +266,6 @@ public partial class App : Application
         }
     }
 
-    private async Task UpdateTrayIconAsync()
-    {
-        try
-        {
-            Log.Information("Updating tray icon...");
-
-            using var scope = _serviceProvider!.CreateScope();
-            var friendRepository = scope.ServiceProvider.GetRequiredService<IFriendRepository>();
-
-            // 直近の誕生日を取得
-            var upcomingBirthdays = await friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
-            if (upcomingBirthdays.Count > 0)
-            {
-                var nextFriend = upcomingBirthdays[0];
-                var daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
-                _trayIconService?.UpdateIcon(daysUntil);
-                Log.Information("Tray icon updated: Next birthday in {Days} days", daysUntil);
-            }
-            else
-            {
-                _trayIconService?.UpdateIcon(null);
-                Log.Information("Tray icon updated: No upcoming birthdays");
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to update tray icon");
-        }
-    }
-
     private void StartHourlyUpdateTimer()
     {
         try
@@ -313,7 +283,7 @@ public partial class App : Application
                 async _ =>
                 {
                     Log.Information("Hourly tray icon update triggered");
-                    await UpdateTrayIconAsync();
+                    await _trayIconService.UpdateTrayIconFromRepositoryAsync();
                 },
                 null,
                 dueTime,

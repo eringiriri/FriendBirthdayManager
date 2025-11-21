@@ -264,7 +264,11 @@ public partial class ListViewModel : ObservableObject
             await LoadFriendsAsync();
 
             // タスクトレイアイコンを更新
-            await UpdateTrayIconAsync();
+            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
+            if (trayIconService != null)
+            {
+                await trayIconService.UpdateTrayIconFromRepositoryAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -419,38 +423,6 @@ public partial class ListViewModel : ObservableObject
                 "エラー",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
-        }
-    }
-
-    private async Task UpdateTrayIconAsync()
-    {
-        try
-        {
-            var trayIconService = _serviceProvider.GetService<ITrayIconService>();
-            if (trayIconService == null)
-            {
-                _logger.LogWarning("ITrayIconService not found");
-                return;
-            }
-
-            // 直近の誕生日を取得
-            var upcomingFriends = await _friendRepository.GetUpcomingBirthdaysAsync(DateTime.Now, 1);
-            var nextFriend = upcomingFriends.FirstOrDefault();
-
-            int? daysUntil = null;
-            if (nextFriend != null)
-            {
-                daysUntil = nextFriend.CalculateDaysUntilBirthday(DateTime.Now);
-            }
-
-            // タスクトレイアイコンを更新
-            trayIconService.UpdateIcon(daysUntil);
-
-            _logger.LogInformation("Tray icon updated from ListViewModel: Days until next birthday = {Days}", daysUntil);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update tray icon");
         }
     }
 }

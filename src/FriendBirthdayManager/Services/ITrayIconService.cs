@@ -16,6 +16,11 @@ public interface ITrayIconService
     void UpdateIcon(int? daysUntilNextBirthday);
 
     /// <summary>
+    /// リポジトリから直近の誕生日を取得してアイコンを更新
+    /// </summary>
+    Task UpdateTrayIconFromRepositoryAsync();
+
+    /// <summary>
     /// バルーンチップを表示
     /// </summary>
     void ShowBalloonTip(string title, string message);
