@@ -105,6 +105,9 @@ public partial class SettingsViewModel : ObservableObject
             // タスクトレイメニューとツールチップを更新
             _trayIconService.UpdateMenu();
 
+            // メインウィンドウの誕生日一覧を更新
+            await RefreshMainWindowAsync();
+
             // スタートアップ登録の更新
             if (StartWithWindows)
             {
@@ -295,6 +298,32 @@ public partial class SettingsViewModel : ObservableObject
                 "エラー",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    private async Task RefreshMainWindowAsync()
+    {
+        try
+        {
+            // メインウィンドウを取得
+            var mainWindow = System.Windows.Application.Current.Windows.OfType<Views.MainWindow>().FirstOrDefault();
+            if (mainWindow?.DataContext is MainViewModel mainViewModel)
+            {
+                await mainViewModel.RefreshUpcomingBirthdaysAsync();
+                _logger.LogInformation("Main window upcoming birthdays refreshed after language change");
+            }
+
+            // 一覧ウィンドウを取得
+            var listWindow = System.Windows.Application.Current.Windows.OfType<Views.ListWindow>().FirstOrDefault();
+            if (listWindow?.DataContext is ListViewModel listViewModel)
+            {
+                await listViewModel.LoadFriendsAsync();
+                _logger.LogInformation("List window refreshed after language change");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh windows");
         }
     }
 }

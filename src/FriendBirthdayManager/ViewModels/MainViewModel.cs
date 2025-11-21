@@ -322,6 +322,11 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    public async Task RefreshUpcomingBirthdaysAsync()
+    {
+        await LoadUpcomingBirthdaysAsync();
+    }
+
     private async Task UpdateTrayIconAsync()
     {
         try
