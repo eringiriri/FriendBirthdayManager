@@ -143,4 +143,13 @@
     <sys:String x:Key="FileFilterCsvAll">CSV 파일 (*.csv)|*.csv|모든 파일 (*.*)|*.*</sys:String>
     <sys:String x:Key="FileFilterDatabase">데이터베이스 파일 (*.db)|*.db|모든 파일 (*.*)|*.*</sys:String>
 
+    <!-- Date Display -->
+    <sys:String x:Key="DaysUntilFormat">({0}일 남음)</sys:String>
+    <sys:String x:Key="DaysFormat">{0}일</sys:String>
+    <sys:String x:Key="YearSuffix">년</sys:String>
+    <sys:String x:Key="MonthSuffix">월</sys:String>
+    <sys:String x:Key="DaySuffix">일</sys:String>
+    <sys:String x:Key="NotSet">미설정</sys:String>
+    <sys:String x:Key="DaysUntilNone">－</sys:String>
+
 </ResourceDictionary>

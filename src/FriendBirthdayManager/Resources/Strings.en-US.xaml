@@ -143,4 +143,13 @@
     <sys:String x:Key="FileFilterCsvAll">CSV Files (*.csv)|*.csv|All Files (*.*)|*.*</sys:String>
     <sys:String x:Key="FileFilterDatabase">Database Files (*.db)|*.db|All Files (*.*)|*.*</sys:String>
 
+    <!-- Date Display -->
+    <sys:String x:Key="DaysUntilFormat">(In {0} days)</sys:String>
+    <sys:String x:Key="DaysFormat">{0} days</sys:String>
+    <sys:String x:Key="YearSuffix"></sys:String>
+    <sys:String x:Key="MonthSuffix"></sys:String>
+    <sys:String x:Key="DaySuffix"></sys:String>
+    <sys:String x:Key="NotSet">Not set</sys:String>
+    <sys:String x:Key="DaysUntilNone">－</sys:String>
+
 </ResourceDictionary>

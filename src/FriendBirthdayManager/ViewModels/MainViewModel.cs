@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FriendBirthdayManager.Data;
 using FriendBirthdayManager.Models;
+using FriendBirthdayManager.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IFriendRepository _friendRepository;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILocalizationService _localizationService;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -49,10 +51,12 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(
         IFriendRepository friendRepository,
         IServiceProvider serviceProvider,
+        ILocalizationService localizationService,
         ILogger<MainViewModel> logger)
     {
         _friendRepository = friendRepository;
         _serviceProvider = serviceProvider;
+        _localizationService = localizationService;
         _logger = logger;
 
         // 直近の誕生日を読み込み
@@ -301,7 +305,7 @@ public partial class MainViewModel : ObservableObject
                     Id = friend.Id,
                     Name = friend.Name,
                     BirthdayDisplay = friend.GetBirthdayDisplayString(),
-                    DaysUntilDisplay = daysUntil.HasValue ? $"（あと {daysUntil.Value}日）" : string.Empty
+                    DaysUntilDisplay = daysUntil.HasValue ? string.Format(_localizationService.GetString("DaysUntilFormat"), daysUntil.Value) : string.Empty
                 });
             }
 
