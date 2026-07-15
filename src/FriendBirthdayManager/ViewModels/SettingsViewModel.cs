@@ -226,6 +226,12 @@ public partial class SettingsViewModel : ObservableObject
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Information);
             }
+
+            // 追加または更新があった場合はタスクトレイアイコンを更新
+            if (importResult.SuccessCount > 0 || importResult.UpdateCount > 0)
+            {
+                await _trayIconService.UpdateTrayIconFromRepositoryAsync();
+            }
         }
         catch (Exception ex)
         {

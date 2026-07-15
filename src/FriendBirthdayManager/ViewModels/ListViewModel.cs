@@ -352,6 +352,13 @@ public partial class ListViewModel : ObservableObject
             if (result.SuccessCount > 0 || result.UpdateCount > 0)
             {
                 await LoadFriendsAsync();
+
+                // タスクトレイアイコンを更新
+                var trayIconService = _serviceProvider.GetService<ITrayIconService>();
+                if (trayIconService != null)
+                {
+                    await trayIconService.UpdateTrayIconFromRepositoryAsync();
+                }
             }
         }
         catch (Exception ex)
