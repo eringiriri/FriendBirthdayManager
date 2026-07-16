@@ -16,6 +16,8 @@ public static class Constants
         public const int MaxMonth = 12;
         public const int MinDay = 1;
         public const int MaxDay = 31;
+        public const int MinAge = 0;
+        public const int MaxAge = 150;
     }
 
     /// <summary>

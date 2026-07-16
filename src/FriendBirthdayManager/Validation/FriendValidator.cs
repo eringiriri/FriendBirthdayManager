@@ -94,6 +94,60 @@ public static class FriendValidator
     }
 
     /// <summary>
+    /// 年齢の文字列から生まれ年を計算（今年の誕生日がまだ来ていなければ前年）
+    /// </summary>
+    /// <returns>年齢が有効な数値の場合はtrue</returns>
+    public static bool TryCalculateBirthYearFromAge(string? age, string? birthMonth, string? birthDay, DateTime today, out int birthYear)
+    {
+        birthYear = 0;
+
+        if (string.IsNullOrWhiteSpace(age))
+        {
+            return false;
+        }
+
+        if (!int.TryParse(age, out var ageValue) || ageValue < Constants.DateValidation.MinAge || ageValue > Constants.DateValidation.MaxAge)
+        {
+            return false;
+        }
+
+        birthYear = today.Year - ageValue;
+
+        // 月日が入力済みなら、今年の誕生日を迎えたかどうかで補正する
+        if (int.TryParse(birthMonth, out var month) && month >= Constants.DateValidation.MinMonth && month <= Constants.DateValidation.MaxMonth &&
+            int.TryParse(birthDay, out var day) && day >= Constants.DateValidation.MinDay && day <= Constants.DateValidation.MaxDay)
+        {
+            // 2月29日生まれで平年の場合は2月28日として比較
+            if (month == 2 && day == 29 && !DateTime.IsLeapYear(today.Year))
+            {
+                day = 28;
+            }
+
+            try
+            {
+                var birthdayThisYear = new DateTime(today.Year, month, day);
+                if (birthdayThisYear > today.Date)
+                {
+                    birthYear--;
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // 無効な月日の組み合わせは年のみで計算
+            }
+        }
+
+        // 計算結果が保存可能な誕生年の範囲外なら自動入力しない
+        if (birthYear < Constants.DateValidation.MinYear || birthYear > Constants.DateValidation.MaxYear)
+        {
+            birthYear = 0;
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// 通知日数インデックスを日数に変換
     /// </summary>
     public static int? ConvertNotifyIndexToDays(int notifyDaysBeforeIndex)

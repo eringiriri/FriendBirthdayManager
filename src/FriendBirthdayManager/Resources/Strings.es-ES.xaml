@@ -15,6 +15,8 @@
     <sys:String x:Key="MainWindowTitle">Agregar cumpleaños de amigo - Friend Birthday Manager</sys:String>
     <sys:String x:Key="LabelName">Nombre: *Obligatorio</sys:String>
     <sys:String x:Key="LabelBirthday">Cumpleaños:</sys:String>
+    <sys:String x:Key="LabelAge">Edad:</sys:String>
+    <sys:String x:Key="HintAgeAutoFill">※ Al introducir la edad se calcula automáticamente el año de nacimiento</sys:String>
     <sys:String x:Key="LabelAlias">Alias:</sys:String>
     <sys:String x:Key="LabelMemo">Nota:</sys:String>
     <sys:String x:Key="LabelNotificationSettings">Configuración de notificaciones:</sys:String>

@@ -15,6 +15,8 @@
     <sys:String x:Key="MainWindowTitle">Add Friend Birthday - Friend Birthday Manager</sys:String>
     <sys:String x:Key="LabelName">Name: *Required</sys:String>
     <sys:String x:Key="LabelBirthday">Birthday:</sys:String>
+    <sys:String x:Key="LabelAge">Age:</sys:String>
+    <sys:String x:Key="HintAgeAutoFill">※ Entering an age fills in the birth year automatically</sys:String>
     <sys:String x:Key="LabelAlias">Alias:</sys:String>
     <sys:String x:Key="LabelMemo">Memo:</sys:String>
     <sys:String x:Key="LabelNotificationSettings">Notification Settings:</sys:String>

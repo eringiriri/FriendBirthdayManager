@@ -35,6 +35,11 @@ public partial class MainViewModel : ObservableObject
     private string? _birthDay;
 
     [ObservableProperty]
+    private string? _age;
+
+    private bool _isUpdatingBirthYearFromAge;
+
+    [ObservableProperty]
     private string? _memo;
 
     [ObservableProperty]
@@ -64,6 +69,42 @@ public partial class MainViewModel : ObservableObject
 
         // 直近の誕生日を読み込み
         _ = LoadUpcomingBirthdaysAsync();
+    }
+
+    partial void OnAgeChanged(string? value) => UpdateBirthYearFromAge();
+
+    partial void OnBirthMonthChanged(string? value) => UpdateBirthYearFromAge();
+
+    partial void OnBirthDayChanged(string? value) => UpdateBirthYearFromAge();
+
+    partial void OnBirthYearChanged(string? value)
+    {
+        // ユーザーが誕生年を直接編集した場合は年齢入力をクリア
+        if (!_isUpdatingBirthYearFromAge)
+        {
+            Age = null;
+        }
+    }
+
+    /// <summary>
+    /// 年齢入力から生まれ年を自動計算する
+    /// </summary>
+    private void UpdateBirthYearFromAge()
+    {
+        if (!FriendValidator.TryCalculateBirthYearFromAge(Age, BirthMonth, BirthDay, DateTime.Today, out var birthYear))
+        {
+            return;
+        }
+
+        _isUpdatingBirthYearFromAge = true;
+        try
+        {
+            BirthYear = birthYear.ToString();
+        }
+        finally
+        {
+            _isUpdatingBirthYearFromAge = false;
+        }
     }
 
     [RelayCommand]
@@ -281,6 +322,7 @@ public partial class MainViewModel : ObservableObject
         BirthYear = null;
         BirthMonth = null;
         BirthDay = null;
+        Age = null;
         Memo = null;
         NotifyDaysBeforeIndex = 0;
         Aliases.Clear();

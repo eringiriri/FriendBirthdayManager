@@ -50,11 +50,20 @@
                          Width="50"
                          MaxLength="2"
                          VerticalContentAlignment="Center"/>
+                <TextBlock Text="{DynamicResource LabelAge}" Margin="15,0,5,0" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding Age, UpdateSourceTrigger=PropertyChanged}"
+                         Width="50"
+                         MaxLength="3"
+                         VerticalContentAlignment="Center"/>
             </StackPanel>
             <TextBlock Text="{DynamicResource HintBirthdayRequired}"
                        FontSize="10"
                        Foreground="Gray"
                        Margin="0,5,0,0"/>
+            <TextBlock Text="{DynamicResource HintAgeAutoFill}"
+                       FontSize="10"
+                       Foreground="Gray"
+                       Margin="0,2,0,0"/>
         </StackPanel>
 
         <!-- エイリアス入力 -->

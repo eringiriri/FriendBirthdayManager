@@ -15,6 +15,8 @@
     <sys:String x:Key="MainWindowTitle">친구 생일 추가 - Friend Birthday Manager</sys:String>
     <sys:String x:Key="LabelName">이름: *필수</sys:String>
     <sys:String x:Key="LabelBirthday">생일:</sys:String>
+    <sys:String x:Key="LabelAge">나이:</sys:String>
+    <sys:String x:Key="HintAgeAutoFill">※ 나이를 입력하면 태어난 해가 자동으로 계산됩니다</sys:String>
     <sys:String x:Key="LabelAlias">별칭:</sys:String>
     <sys:String x:Key="LabelMemo">메모:</sys:String>
     <sys:String x:Key="LabelNotificationSettings">알림 설정:</sys:String>
