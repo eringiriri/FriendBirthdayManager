@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Threading;
 using System.Windows;
 using FriendBirthdayManager.Data;
@@ -22,7 +22,7 @@ public partial class App : Application
     private INotificationService? _notificationService;
     private static Mutex? _mutex;
     private static bool _ownsMutex;
-    private System.Threading.Timer? _hourlyUpdateTimer;
+    private System.Threading.Timer? _iconUpdateTimer;
     private const string MutexName = "FriendBirthdayManager_SingleInstance";
 
     /// <summary>
@@ -85,8 +85,8 @@ public partial class App : Application
             _notificationService = _serviceProvider.GetRequiredService<INotificationService>();
             _notificationService.Start();
 
-            // 毎時00分にアイコン更新するタイマーを開始
-            StartHourlyUpdateTimer();
+            // 30分ごとにアイコン更新するタイマーを開始
+            StartPeriodicIconUpdateTimer();
 
             // メインウィンドウは表示せず、タスクトレイのみ常駐
             // ※ ユーザーがタスクトレイから「誕生日を追加」を選択したときに表示される
@@ -109,8 +109,8 @@ public partial class App : Application
         // 通知サービスの停止
         _notificationService?.Stop();
 
-        // 毎時更新タイマーの停止
-        _hourlyUpdateTimer?.Dispose();
+        // 定期更新タイマーの停止
+        _iconUpdateTimer?.Dispose();
 
         // タスクトレイサービスのクリーンアップ
         _trayIconService?.Dispose();
@@ -272,32 +272,42 @@ public partial class App : Application
         }
     }
 
-    private void StartHourlyUpdateTimer()
+    private void StartPeriodicIconUpdateTimer()
     {
         try
         {
             var now = DateTime.Now;
+            var interval = TimeSpan.FromMinutes(30);
 
-            // 次の00分までの時間を計算
-            var nextHour = now.Date.AddHours(now.Hour + 1);
-            var dueTime = nextHour - now;
+            // 次の00分または30分までの時間を計算
+            var intervalMinutes = (int)interval.TotalMinutes;
+            var minutesIntoDay = (int)(now - now.Date).TotalMinutes;
+            var nextUpdate = now.Date.AddMinutes((minutesIntoDay / intervalMinutes + 1) * intervalMinutes);
+            var dueTime = nextUpdate - now;
 
-            Log.Information("Hourly update timer starting. First update at: {NextUpdate}", nextHour);
+            Log.Information("Periodic icon update timer starting. First update at: {NextUpdate}", nextUpdate);
 
-            // 毎時00分に実行するタイマーを設定
-            _hourlyUpdateTimer = new System.Threading.Timer(
+            var trayIconService = _trayIconService;
+            if (trayIconService == null)
+            {
+                Log.Warning("Tray icon service is not initialized; periodic update timer not started");
+                return;
+            }
+
+            // 毎時00分・30分に実行するタイマーを設定
+            _iconUpdateTimer = new System.Threading.Timer(
                 async _ =>
                 {
-                    Log.Information("Hourly tray icon update triggered");
-                    await _trayIconService.UpdateTrayIconFromRepositoryAsync();
+                    Log.Information("Periodic tray icon update triggered");
+                    await trayIconService.UpdateTrayIconFromRepositoryAsync();
                 },
                 null,
                 dueTime,
-                TimeSpan.FromHours(1));
+                interval);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to start hourly update timer");
+            Log.Error(ex, "Failed to start periodic icon update timer");
         }
     }
 }

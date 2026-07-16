@@ -95,7 +95,8 @@ FriendBirthdayManager/
 │       ├── Resources/        # リソース
 │       │   ├── Icons/                    # アイコンファイル (.ico)
 │       │   │   ├── birthday_cake.ico     # 今日が誕生日
-│       │   │   └── number_1.ico ~ number_9.ico   # 残り日数アイコン
+│       │   │   ├── number_1.ico ~ number_9.ico   # 残り日数アイコン
+│       │   │   └── calendar.ico          # 10日以上先・誕生日登録なし
 │       │   ├── Strings.ja-JP.xaml        # 日本語リソース
 │       │   ├── Strings.en-US.xaml        # 英語リソース
 │       │   ├── Strings.ko-KR.xaml        # 韓国語リソース

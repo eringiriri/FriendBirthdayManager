@@ -254,12 +254,18 @@ public class TrayIconService : ITrayIconService, IDisposable
 
     private string GetIconFileName(int? daysUntil)
     {
+        if (daysUntil.HasValue && daysUntil.Value == 0)
+        {
+            return "birthday_cake.ico";
+        }
+
         if (daysUntil.HasValue && daysUntil.Value >= 1 && daysUntil.Value <= 9)
         {
             return $"number_{daysUntil.Value}.ico";
         }
 
-        return "birthday_cake.ico";
+        // 10日以上先、または誕生日登録なし
+        return "calendar.ico";
     }
 
     private void ShowMainWindow()
