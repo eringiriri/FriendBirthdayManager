@@ -15,6 +15,8 @@
     <sys:String x:Key="MainWindowTitle">友人の誕生日を追加 - Friend Birthday Manager</sys:String>
     <sys:String x:Key="LabelName">名前: *必須</sys:String>
     <sys:String x:Key="LabelBirthday">誕生日:</sys:String>
+    <sys:String x:Key="LabelAge">年齢:</sys:String>
+    <sys:String x:Key="HintAgeAutoFill">※ 年齢を入力すると生まれ年を自動計算します</sys:String>
     <sys:String x:Key="LabelAlias">エイリアス:</sys:String>
     <sys:String x:Key="LabelMemo">メモ:</sys:String>
     <sys:String x:Key="LabelNotificationSettings">通知設定:</sys:String>
