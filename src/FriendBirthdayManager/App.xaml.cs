@@ -21,6 +21,7 @@ public partial class App : Application
     private ITrayIconService? _trayIconService;
     private INotificationService? _notificationService;
     private static Mutex? _mutex;
+    private static bool _ownsMutex;
     private System.Threading.Timer? _hourlyUpdateTimer;
     private const string MutexName = "FriendBirthdayManager_SingleInstance";
 
@@ -42,6 +43,7 @@ public partial class App : Application
         // 多重起動チェック
         bool createdNew;
         _mutex = new Mutex(true, MutexName, out createdNew);
+        _ownsMutex = createdNew;
 
         if (!createdNew)
         {
@@ -119,8 +121,12 @@ public partial class App : Application
             disposable.Dispose();
         }
 
-        // Mutexを解放
-        _mutex?.ReleaseMutex();
+        // Mutexを解放（多重起動側は所有権を持たないため解放しない）
+        if (_ownsMutex)
+        {
+            _mutex?.ReleaseMutex();
+            _ownsMutex = false;
+        }
         _mutex?.Dispose();
         _mutex = null;
 
